@@ -23,7 +23,8 @@ describe('provider model display options', () => {
   it('uses official model options when no provider is active', () => {
     const options = getModelDisplayOptions(null);
     expect(options.map((option) => option.short)).toEqual([
-      'Opus 4.7',
+      'Opus 4.8',
+      'Opus 4.8 (1M)',
       'Opus 4.6',
       'Opus 4.6 (1M)',
       'Sonnet 4.6',
@@ -65,14 +66,14 @@ describe('provider model display options', () => {
   it('keeps official options for Claude-only mappings', () => {
     const p = provider({
       modelMappings: [
-        { tier: 'opus', providerModel: 'claude-opus-4-7' },
+        { tier: 'opus', providerModel: 'claude-opus-4-8' },
         { tier: 'sonnet', providerModel: 'claude-sonnet-4-6' },
         { tier: 'haiku', providerModel: 'claude-haiku-4-5-20251001' },
       ],
     });
 
     expect(shouldUseProviderModelOptions(p)).toBe(false);
-    expect(getModelDisplayOptions(p)).toHaveLength(5);
+    expect(getModelDisplayOptions(p)).toHaveLength(6);
   });
 
   it('selects the configured provider option for any Claude model in the same tier', () => {
@@ -83,7 +84,7 @@ describe('provider model display options', () => {
       ],
     }));
 
-    expect(getSelectedModelOptionId('claude-opus-4-6', options)).toBe('claude-opus-4-7');
+    expect(getSelectedModelOptionId('claude-opus-4-6', options)).toBe('claude-opus-4-8');
     expect(getSelectedModelOptionId('claude-sonnet-4-6', options)).toBe('claude-sonnet-4-6');
   });
 });

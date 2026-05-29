@@ -8,8 +8,8 @@ export type Theme = 'light' | 'dark' | 'system';
 export type ColorTheme = 'black' | 'blue' | 'orange' | 'green';
 export type SecondaryPanelTab = 'files' | 'skills';
 export type ModelId =
-  | 'claude-opus-4-7'
-  | 'claude-opus-4-7-1m' // legacy alias, kept for persisted settings compatibility
+  | 'claude-opus-4-8'
+  | 'claude-opus-4-8-1m'
   | 'claude-opus-4-6'
   | 'claude-opus-4-6-1m'
   | 'claude-sonnet-4-6'
@@ -32,10 +32,12 @@ export type ThinkingLevel = 'off' | 'low' | 'medium' | 'high' | 'max';
 
 // --- Model options (display mapping) ---
 
-// UI display rule: 4.7 is shown once because it ships with 1M context by default.
-// 4.6 keeps a separate 1M variant so users can choose the larger window.
+// UI display rule: each Opus generation exposes a standard (200K) and a 1M
+// variant so users can pick the larger context window explicitly. The 1M id is
+// translated to the CLI's `[1m]` model name in api-provider.ts (CLI_MODEL_MAP).
 export const MODEL_OPTIONS: { id: ModelId; label: string; short: string }[] = [
-  { id: 'claude-opus-4-7', label: 'Opus 4.7', short: 'Opus 4.7' },
+  { id: 'claude-opus-4-8', label: 'Opus 4.8', short: 'Opus 4.8' },
+  { id: 'claude-opus-4-8-1m', label: 'Opus 4.8 (1M)', short: 'Opus 4.8 (1M)' },
   { id: 'claude-opus-4-6', label: 'Opus 4.6', short: 'Opus 4.6' },
   { id: 'claude-opus-4-6-1m', label: 'Opus 4.6 (1M)', short: 'Opus 4.6 (1M)' },
   { id: 'claude-sonnet-4-6', label: 'Sonnet 4.6', short: 'Sonnet 4.6' },
@@ -260,13 +262,13 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'tokenicode-settings',
-      version: 7,
+      version: 8,
       migrate: (persistedState: unknown, version: number) => {
         const persisted = persistedState as Record<string, unknown>;
         if (version === 0) {
           // Migrate legacy model IDs to current ones
           const legacyMap: Record<string, ModelId> = {
-            'claude-opus-4-0': 'claude-opus-4-7',
+            'claude-opus-4-0': 'claude-opus-4-8',
             'claude-sonnet-4-0': 'claude-sonnet-4-6',
             'claude-haiku-3-5': 'claude-haiku-4-5-20251001',
           };
@@ -306,6 +308,20 @@ export const useSettingsStore = create<SettingsState>()(
         // v7 migration removed (Phase 2 §2.5 / §5.1): users are free to pick
         // 4.6 / 4.6-1m / 4.7 / 4.7-1m. The earlier migration forcibly rewrote
         // 4.6 selections to 4.7, which silently broke old-CLI users.
+        if (version < 8) {
+          // 4.7 is retired in favor of 4.8. Only remap the two existing 4.7
+          // selections to their 4.8 equivalents — never force-rewrite any other
+          // model (4.8 is a CLI-supported model, so this is a same-tier upgrade,
+          // not the v7-style unconditional rewrite that broke old-CLI users).
+          const opusUpgradeMap: Record<string, ModelId> = {
+            'claude-opus-4-7': 'claude-opus-4-8',
+            'claude-opus-4-7-1m': 'claude-opus-4-8-1m',
+          };
+          const current = persisted.selectedModel as string;
+          if (current && opusUpgradeMap[current]) {
+            persisted.selectedModel = opusUpgradeMap[current];
+          }
+        }
         return persisted;
       },
       partialize: (state) => ({

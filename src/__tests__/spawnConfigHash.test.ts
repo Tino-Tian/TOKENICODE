@@ -55,7 +55,7 @@ describe('spawnConfigHash', () => {
 
   it('changes when selectedModel changes', () => {
     const before = spawnConfigHash();
-    useSettingsStore.setState({ selectedModel: 'claude-opus-4-7' });
+    useSettingsStore.setState({ selectedModel: 'claude-opus-4-8' });
     const after = spawnConfigHash();
     expect(after).not.toBe(before);
   });

@@ -26,18 +26,24 @@ beforeEach(() => {
 });
 
 describe('model context routing', () => {
-  it('treats Opus 4.7 and explicit 1M markers as 1M models', () => {
-    expect(is1MModel('claude-opus-4-7')).toBe(true);
+  it('treats only explicit 1M variants as 1M models', () => {
+    // Standard variants are 200K; 1M is opt-in via -1m / [1m].
+    expect(is1MModel('claude-opus-4-8')).toBe(false);
+    expect(is1MModel('claude-opus-4-8-1m')).toBe(true);
+    expect(is1MModel('claude-opus-4-8[1m]')).toBe(true);
     expect(is1MModel('claude-opus-4-6-1m')).toBe(true);
     expect(is1MModel('mimo-v2-pro[1m]')).toBe(true);
     expect(is1MModel('claude-opus-4-6')).toBe(false);
-    expect(getAutoCompactThreshold('claude-opus-4-7')).toBe(800_000);
+    expect(getAutoCompactThreshold('claude-opus-4-8')).toBe(160_000);
+    expect(getAutoCompactThreshold('claude-opus-4-8-1m')).toBe(800_000);
     expect(getAutoCompactThreshold('claude-opus-4-6-1m')).toBe(800_000);
     expect(getAutoCompactThreshold('claude-opus-4-6')).toBe(160_000);
   });
 
-  it('keeps the 4.6 1M variant and normalizes legacy 4.7-1m to 4.7', () => {
+  it('translates -1m UI ids to the CLI [1m] model name', () => {
+    expect(resolveModelForProvider('claude-opus-4-8-1m')).toBe('claude-opus-4-8[1m]');
     expect(resolveModelForProvider('claude-opus-4-6-1m')).toBe('claude-opus-4-6[1m]');
-    expect(resolveModelForProvider('claude-opus-4-7-1m')).toBe('claude-opus-4-7');
+    // Standard variant passes through unchanged.
+    expect(resolveModelForProvider('claude-opus-4-8')).toBe('claude-opus-4-8');
   });
 });

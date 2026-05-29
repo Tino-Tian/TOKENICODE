@@ -6,8 +6,9 @@ import { MODEL_OPTIONS, useSettingsStore, type ModelId } from '../stores/setting
  * Defined once here and imported by ModelSelector, GeneralTab, etc.
  */
 export const TIER_MAP: Record<string, 'opus' | 'sonnet' | 'haiku'> = {
-  'claude-opus-4-7-1m': 'opus',
-  'claude-opus-4-7': 'opus',
+  'claude-opus-4-8': 'opus',
+  'claude-opus-4-8-1m': 'opus',
+  'claude-opus-4-8[1m]': 'opus',
   'claude-opus-4-6-1m': 'opus',
   'claude-opus-4-6[1m]': 'opus',
   'claude-opus-4-6': 'opus',
@@ -18,7 +19,7 @@ export const TIER_MAP: Record<string, 'opus' | 'sonnet' | 'haiku'> = {
 const FIXED_MODEL_TIERS = new Set(['opus', 'sonnet', 'haiku']);
 const MODEL_TIER_ORDER = ['opus', 'sonnet', 'haiku'];
 const DEFAULT_MODEL_FOR_TIER: Record<string, ModelId> = {
-  opus: 'claude-opus-4-7',
+  opus: 'claude-opus-4-8',
   sonnet: 'claude-sonnet-4-6',
   haiku: 'claude-haiku-4-5-20251001',
 };
@@ -123,14 +124,14 @@ export function getSelectedModelOptionId(
  * Check whether the given model ID (or the currently selected model) uses
  * the 1M context window variant.
  *
- * Canonical Opus 4.7 is 1M by default. Explicit variants can advertise 1M
- * either via a `-1m` suffix (legacy UI ids) or a `[1m]` marker (provider ids).
+ * 1M variants advertise themselves either via a `-1m` suffix (UI ids such as
+ * `claude-opus-4-8-1m`) or a `[1m]` marker (CLI / provider ids such as
+ * `claude-opus-4-8[1m]`). Standard variants (e.g. `claude-opus-4-8`) are 200K.
  */
 export function is1MModel(modelId?: string): boolean {
   const id = modelId ?? useSettingsStore.getState().selectedModel;
   const lower = id.toLowerCase();
-  return lower === 'claude-opus-4-7'
-    || lower.endsWith('-1m')
+  return lower.endsWith('-1m')
     || lower.includes('[1m]');
 }
 
@@ -157,7 +158,7 @@ export function resolveModelOrError(selectedModel: string): ModelResolution {
   const provider = useProviderStore.getState().getActive();
   if (!provider) return { ok: true, model: selectedModel };
 
-  // 1. Check direct model ID mapping first (e.g. 'claude-opus-4-7' → 'glm-5')
+  // 1. Check direct model ID mapping first (e.g. 'claude-opus-4-8' → 'glm-5')
   const directMapping = provider.modelMappings.find(
     (m) => m.tier === selectedModel && m.providerModel,
   );
@@ -181,12 +182,12 @@ export function resolveModelOrError(selectedModel: string): ModelResolution {
 /**
  * Map internal model IDs to CLI-expected format.
  *
- * Canonical 4.7 stays plain because it ships with 1M context by default.
- * Legacy 4.7-1m selections normalize to the canonical 4.7 id, while explicit
- * 4.6 1M variants stay intact so the CLI can request the larger window.
+ * Standard Opus variants (e.g. `claude-opus-4-8`) pass through unchanged. The
+ * `-1m` UI ids are translated to the CLI's `[1m]` model name so the CLI requests
+ * the larger context window.
  */
 const CLI_MODEL_MAP: Partial<Record<ModelId, string>> = {
-  'claude-opus-4-7-1m': 'claude-opus-4-7',
+  'claude-opus-4-8-1m': 'claude-opus-4-8[1m]',
   'claude-opus-4-6-1m': 'claude-opus-4-6[1m]',
 };
 

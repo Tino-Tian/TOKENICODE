@@ -756,9 +756,6 @@ struct ProvidersFile {
 }
 
 const PARTIAL_MESSAGES_OVERRIDE_ENV: &str = "TOKENICODE_INCLUDE_PARTIAL_MESSAGES";
-const OPUS_4_7_MODEL_ID: &str = "claude-opus-4-7";
-const OPUS_4_7_LEGACY_1M_MODEL_ID: &str = "claude-opus-4-7-1m";
-const OPUS_4_7_CLI_1M_MODEL_ID: &str = "claude-opus-4-7[1m]";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct ProviderRuntimeCapabilities {
@@ -1250,20 +1247,21 @@ fn redacted_env_for_log(env: &HashMap<String, String>) -> BTreeMap<String, Strin
         .collect()
 }
 
+/// Normalize a UI model id to the CLI-expected model name.
+///
+/// The frontend already maps its `-1m` UI ids to the CLI's `[1m]` form
+/// (see api-provider.ts CLI_MODEL_MAP) before the id reaches Rust, so standard
+/// and 1M Opus variants both pass through unchanged. Kept as a seam in case
+/// future models need backend-side rewriting.
 fn normalize_cli_model_id(model: &str) -> String {
-    let lower = model.to_lowercase();
-    if lower == OPUS_4_7_MODEL_ID || lower == OPUS_4_7_LEGACY_1M_MODEL_ID {
-        OPUS_4_7_CLI_1M_MODEL_ID.to_string()
-    } else {
-        model.to_string()
-    }
+    model.to_string()
 }
 
 #[cfg(test)]
 mod provider_capability_tests {
     use super::{
         normalize_cli_model_id, parse_bool_override, redacted_env_for_log,
-        resolve_provider_capabilities, ApiProvider, ModelMapping, OPUS_4_7_CLI_1M_MODEL_ID,
+        resolve_provider_capabilities, ApiProvider, ModelMapping,
         PARTIAL_MESSAGES_OVERRIDE_ENV,
     };
     use std::collections::HashMap;
@@ -1302,14 +1300,16 @@ mod provider_capability_tests {
     }
 
     #[test]
-    fn opus_4_7_normalizes_to_cli_1m_model_id() {
+    fn normalize_cli_model_id_passes_models_through_unchanged() {
+        // Standard Opus passes through; the 1M form already arrives in `[1m]`
+        // shape from the frontend, so it is also untouched.
         assert_eq!(
-            normalize_cli_model_id("claude-opus-4-7"),
-            OPUS_4_7_CLI_1M_MODEL_ID
+            normalize_cli_model_id("claude-opus-4-8"),
+            "claude-opus-4-8"
         );
         assert_eq!(
-            normalize_cli_model_id("claude-opus-4-7-1m"),
-            OPUS_4_7_CLI_1M_MODEL_ID
+            normalize_cli_model_id("claude-opus-4-8[1m]"),
+            "claude-opus-4-8[1m]"
         );
         assert_eq!(normalize_cli_model_id("glm-5"), "glm-5");
     }
@@ -1852,15 +1852,15 @@ async fn start_claude_session(
         );
     }
 
-    // For models with 1M context window (Opus 4.7 by default, explicit 4.6 1M
-    // variants, MiMo v2 Pro, etc.), override the auto-compact threshold so
-    // Claude Code doesn't compact prematurely. The CLI's internal model map may
-    // only know ~200K for some of these models; this env var directly sets the
-    // compact window.
+    // For models with a 1M context window (explicit Opus 1M variants such as
+    // `claude-opus-4-8[1m]` / `claude-opus-4-6[1m]`, MiMo v2 Pro, etc.), override
+    // the auto-compact threshold so Claude Code doesn't compact prematurely. The
+    // CLI's internal model map may only know ~200K for some of these models; this
+    // env var directly sets the compact window. Standard 200K variants (e.g.
+    // `claude-opus-4-8`) deliberately do not match.
     if let Some(model_name) = params.model.as_deref() {
         let m = model_name.to_lowercase();
-        let is_1m_model = m == "claude-opus-4-7"
-            || m.contains("mimo")
+        let is_1m_model = m.contains("mimo")
             || m.contains("[1m]")
             || m.ends_with("-1m");
         if is_1m_model {

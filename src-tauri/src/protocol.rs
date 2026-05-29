@@ -192,10 +192,10 @@ mod tests {
 
     #[test]
     fn test_serialize_set_model() {
-        let req = ControlRequest::set_model(Some("claude-opus-4-7".to_string()));
+        let req = ControlRequest::set_model(Some("claude-opus-4-8".to_string()));
         let json = serde_json::to_string(&req).unwrap();
         assert!(json.contains(r#""subtype":"set_model""#));
-        assert!(json.contains(r#""model":"claude-opus-4-7""#));
+        assert!(json.contains(r#""model":"claude-opus-4-8""#));
     }
 
     #[test]
