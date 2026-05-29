@@ -6,6 +6,23 @@ All notable changes to TOKENICODE will be documented in this file.
 
 ---
 
+## [0.10.8] - 2026-05-29
+
+### 新增
+
+- **Claude Opus 4.8 模型支持** —— 模型列表新增 Opus 4.8 标准版和 1M 上下文版（置顶）。原来选 Opus 4.7 的设置会自动迁移到 Opus 4.8，默认模型仍是 Sonnet 4.6。
+
+### 修复
+
+- **拖拽文件落点更准**（#209）—— 拖拽事件改用 Webview API + DPR 感知坐标，高分屏下拖文件到对话框的识别和落点更准（从 Her 同步）。
+- **微信分享更可靠**（#214）—— 增加剪贴板 + URL scheme 兜底，分享到微信更稳（从 Her 同步）。
+
+### 内部
+
+- 移除 Opus 4.7（类型 / 模型列表 / tier 映射 / CLI 映射 / Rust 常量与 normalize 改写），settings 持久化 v7→v8 平滑迁移存量 4.7 用户到 4.8。
+
+---
+
 ## [0.10.7] - 2026-04-27
 
 ### 修复

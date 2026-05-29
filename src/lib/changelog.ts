@@ -19,6 +19,50 @@ export interface ChangelogEntry {
  */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.10.8',
+    date: '2026-05-29',
+    highlights: {
+      zh: [
+        '新增 Claude Opus 4.8 模型，可选标准版和 1M 大上下文版',
+        '原来用 Opus 4.7 的会自动切到 4.8，不用手动改',
+        '修复拖拽文件落点和微信分享的几个问题',
+      ],
+      en: [
+        'Added Claude Opus 4.8 — choose the standard or 1M-context variant',
+        'Existing Opus 4.7 selections migrate to Opus 4.8 automatically',
+        'Fixed file drag-and-drop positioning and WeChat sharing',
+      ],
+    },
+    categories: [
+      {
+        label: { zh: '新增', en: 'New' },
+        items: {
+          zh: [
+            'Claude Opus 4.8 模型支持 — 列表新增 Opus 4.8 标准版和 1M 上下文版并置顶，默认模型仍是 Sonnet 4.6',
+            '原来选 Opus 4.7 的设置会自动迁移到 Opus 4.8',
+          ],
+          en: [
+            'Claude Opus 4.8 support — standard and 1M-context variants added at the top of the model list; default stays Sonnet 4.6',
+            'Existing Opus 4.7 selections are migrated to Opus 4.8 automatically',
+          ],
+        },
+      },
+      {
+        label: { zh: '修复', en: 'Fixed' },
+        items: {
+          zh: [
+            '拖拽文件落点更准 — 拖拽改用 Webview API + DPR 感知坐标，高分屏下识别更准（从 Her 同步，#209）',
+            '微信分享更可靠 — 增加剪贴板 + URL scheme 兜底（从 Her 同步，#214）',
+          ],
+          en: [
+            'More accurate file drag-and-drop — switched to the Webview drag API with DPR-aware coordinates for high-DPI displays (synced from Her, #209)',
+            'More reliable WeChat sharing — added clipboard + URL scheme fallback (synced from Her, #214)',
+          ],
+        },
+      },
+    ],
+  },
+  {
     version: '0.10.7',
     date: '2026-04-27',
     highlights: {
