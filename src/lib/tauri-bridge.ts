@@ -433,6 +433,13 @@ export const bridge = {
   saveArchivedSessions: (data: string[]) =>
     invoke<void>('save_archived_sessions', { data }).catch(() => {}),
 
+  // Session groups (persisted to ~/.tokenicode/groups.json)
+  loadSessionGroups: () =>
+    invoke<unknown[]>('load_session_groups').catch(() => []),
+
+  saveSessionGroups: (data: unknown[]) =>
+    invoke<void>('save_session_groups', { data }).catch(() => {}),
+
   // AI title generation (spawns separate CLI process, no channel interference)
   generateSessionTitle: (userMessage: string, assistantMessage: string, providerId?: string) =>
     invoke<string | null>('generate_session_title', { userMessage, assistantMessage, providerId: providerId || null }),
