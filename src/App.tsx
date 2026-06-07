@@ -10,11 +10,10 @@ import { ChangelogModal } from './components/shared/ChangelogModal';
 import { Toast } from './components/shared/Toast';
 import { useSettingsStore } from './stores/settingsStore';
 import { useProviderStore } from './stores/providerStore';
-import type { ColorTheme, Theme } from './stores/settingsStore';
 import { useFileStore } from './stores/fileStore';
 import { useChatStore } from './stores/chatStore';
 import { useSessionStore } from './stores/sessionStore';
-import { APP_NAME, IS_ALPHA } from './lib/edition';
+import { APP_NAME } from './lib/edition';
 import { useAgentStore } from './stores/agentStore';
 import { bridge, onFileChange } from './lib/tauri-bridge';
 import { parseSessionMessages } from './lib/session-loader';
@@ -23,9 +22,6 @@ import { useAutoUpdateCheck } from './hooks/useAutoUpdateCheck';
 import { useT } from './lib/i18n';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import './App.css';
-
-/** NOVA icon accent — ice blue */
-const ICON_ACCENT_COLOR = '#00a8e8';
 
 /** Render the NOVA app icon SVG as base64 PNG for macOS Dock.
  *  Diamond-N logo: dark bg (#080c14), rotated square (stroke #00a8e8) with N inside. */
@@ -64,7 +60,7 @@ function renderIconPng(_accentColor?: string): Promise<string> {
   });
 }
 
-async function updateDockIcon(_colorTheme?: ColorTheme, _theme?: Theme) {
+async function updateDockIcon() {
   try {
     const pngBase64 = await renderIconPng();
     await bridge.setDockIcon(pngBase64);
@@ -75,7 +71,6 @@ async function updateDockIcon(_colorTheme?: ColorTheme, _theme?: Theme) {
 
 function App() {
   const theme = useSettingsStore((s) => s.theme);
-  const colorTheme = useSettingsStore((s) => s.colorTheme);
   const fontSize = useSettingsStore((s) => s.fontSize);
   const settingsOpen = useSettingsStore((s) => s.settingsOpen);
   const workingDirectory = useSettingsStore((s) => s.workingDirectory);

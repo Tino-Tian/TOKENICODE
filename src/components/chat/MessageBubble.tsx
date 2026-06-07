@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, type ReactNode } from 'react';
+import { memo, useState, type ReactNode } from 'react';
 import { type ChatMessage } from '../../stores/chatStore';
 import { useFileStore } from '../../stores/fileStore';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -9,8 +9,7 @@ import { CommandProcessingCard } from './CommandProcessingCard';
 import { PlanReviewCard } from './PlanReviewCard';
 import { PermissionCard } from './PermissionCard';
 import { QuestionCard } from './QuestionCard';
-import { AiAvatar } from '../shared/AiAvatar';
-import { UserAvatar } from '../shared/UserAvatar';
+// AiAvatar and UserAvatar removed — NOVA uses left-border label style
 
 interface Props {
   message: ChatMessage;
@@ -51,12 +50,6 @@ export const MessageBubble = memo(function MessageBubble({ message, isFirstInGro
    ================================================================ */
 /** Collapse threshold: messages longer than this are collapsed by default */
 const USER_MSG_COLLAPSE_LINES = 12;
-
-/** Extract file extension from a filename */
-function getFileExt(name: string): string {
-  const dot = name.lastIndexOf('.');
-  return dot > 0 ? name.slice(dot + 1).toLowerCase() : '';
-}
 
 /** Detect file paths in inline code — same regexes as MarkdownRenderer */
 const FILE_PATH_RE = /^(?:\/|\.\/|\.\.\/|[a-zA-Z]:[/\\]|src\/|lib\/|components\/|stores\/|hooks\/|utils\/|tests\/|__tests__\/)[\w.@/-]+\.\w{1,10}$/;
@@ -119,9 +112,7 @@ function renderUserContent(text: string): ReactNode {
 }
 
 function UserMsg({ message }: Props) {
-  const t = useT();
   const [expanded, setExpanded] = useState(false);
-  const [copied, setCopied] = useState(false);
   const attachments = message.attachments;
   const content = safeContent(message.content);
   const lines = content.split('\n');
@@ -129,13 +120,6 @@ function UserMsg({ message }: Props) {
   const displayContent = (!expanded && isLong)
     ? lines.slice(0, USER_MSG_COLLAPSE_LINES).join('\n')
     : content;
-
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(content).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }, [content]);
 
   return (
     <div style={{

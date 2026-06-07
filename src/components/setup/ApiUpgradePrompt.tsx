@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useSettingsStore } from '../../stores/settingsStore';
+// useSettingsStore removed — unused in this component
 
 interface Props {
   onClose: () => void;
@@ -17,8 +16,6 @@ function estimateTokens(): { zhipuTokens: number; deepseekTokens: number; deepse
 }
 
 export function ApiUpgradePrompt({ onClose, onUpgrade }: Props) {
-  const locale = useSettingsStore((s) => s.locale);
-  const isZh = locale === 'zh';
   const { zhipuTokens, deepseekTokens, deepseekCost } = estimateTokens();
 
   return (

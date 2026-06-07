@@ -298,7 +298,7 @@ export function SetupWizard() {
             localStorage.setItem('nova-api-prompt-shown', '1');
             setShowApiPrompt(false);
             // 打开设置面板让用户更换 API
-            useSettingsStore.getState().setSettingsOpen?.(true);
+            useSettingsStore.setState({ settingsOpen: true });
           }}
         />
       )}
