@@ -306,9 +306,11 @@ function TreeNode({
   onCreateSubmit: () => void;
   onCreateCancel: () => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const selectedFile = useFileStore((s) => s.selectedFile);
+  const expanded = useFileStore((s) => s.expandedFolders.has(node.path));
+  const toggleFolder = useFileStore((s) => s.toggleFolder);
   const selectFile = useFileStore((s) => s.selectFile);
+  // 高亮统一看 revealTarget（文件夹也能高亮）；selectFile 会同步设置它
+  const isActive = useFileStore((s) => s.revealTarget === node.path);
   const changeKind = useFileStore((s) => s.changedFiles.get(node.path));
   const dirPrefix = node.path + '/';
   const hasChildChanges = useFileStore((s) =>
@@ -316,13 +318,18 @@ function TreeNode({
       ? Array.from(s.changedFiles.keys()).some((p) => p.startsWith(dirPrefix))
       : false
   );
-  const isSelected = selectedFile === node.path;
 
   const isExpanded = expanded;
+  const rowRef = useRef<HTMLButtonElement>(null);
+
+  // 被「定位」命中时滚动到可见处
+  useEffect(() => {
+    if (isActive) rowRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [isActive]);
 
   const handleClick = () => {
     if (node.is_dir) {
-      setExpanded(!expanded);
+      toggleFolder(node.path);
     } else {
       selectFile(node.path);
     }
@@ -331,6 +338,7 @@ function TreeNode({
   return (
     <div>
       <button
+        ref={rowRef}
         onClick={handleClick}
         onMouseDown={(e) => {
           if (e.button !== 0) return;
@@ -393,7 +401,7 @@ function TreeNode({
         {...(node.is_dir ? { 'data-dir-path': node.path } : {})}
         className={`w-full flex items-center gap-1.5 py-1.5 px-2 rounded-md
           text-left text-[13px] transition-smooth group
-          ${isSelected
+          ${isActive
             ? 'bg-accent/10 text-accent'
             : changeKind
               ? 'text-success'

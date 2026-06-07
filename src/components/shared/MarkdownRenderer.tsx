@@ -7,6 +7,7 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { useLightboxStore } from './ImageLightbox';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useFileStore } from '../../stores/fileStore';
+import { classifyPathToken, resolvePathToken, KNOWN_FILE_EXTENSIONS } from '../../stores/fileReveal';
 import { bridge } from '../../lib/tauri-bridge';
 import { useT } from '../../lib/i18n';
 
@@ -209,23 +210,6 @@ function extractText(node: ReactNode): string {
   return '';
 }
 
-/** Known code/config file extensions — shared between wrapBareFilePaths and inline code detection. */
-const KNOWN_FILE_EXTENSIONS = new Set([
-  'md', 'mdx', 'ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs', 'json', 'jsonl',
-  'toml', 'yaml', 'yml', 'py', 'pyi', 'rs', 'go', 'html', 'htm', 'css',
-  'scss', 'sass', 'less', 'vue', 'svelte', 'sh', 'bash', 'zsh', 'fish',
-  'env', 'conf', 'cfg', 'ini', 'xml', 'sql', 'graphql', 'gql', 'proto',
-  'lock', 'log', 'txt', 'csv', 'rb', 'php', 'java', 'kt', 'swift', 'c',
-  'cpp', 'h', 'hpp', 'cs', 'r', 'lua', 'zig', 'ex', 'exs', 'erl', 'ml',
-  'mli', 'tf', 'hcl', 'dockerfile', 'makefile', 'png', 'jpg', 'jpeg',
-  'gif', 'svg', 'webp', 'ico', 'wasm', 'map',
-]);
-
-/** Detect file paths in inline code — conservative regex to avoid false positives.
- *  Matches: path-prefixed files (/foo.ts, ./bar.md, src/baz.rs) AND
- *  bare filenames with known code/config extensions (CLAUDE.md, package.json). */
-const KNOWN_EXT_RE = /^[\w][\w.-]*\.(?:md|mdx|ts|tsx|js|jsx|mjs|cjs|json|jsonl|toml|yaml|yml|py|pyi|rs|go|html|htm|css|scss|sass|less|vue|svelte|sh|bash|zsh|fish|env|conf|cfg|ini|xml|sql|graphql|gql|proto|lock|log|txt|csv|rb|php|java|kt|swift|c|cpp|h|hpp|cs|r|lua|zig|ex|exs|erl|ml|mli|tf|hcl|dockerfile|makefile)$/i;
-const FILE_PATH_RE = /^(?:\/|\.\/|\.\.\/|[a-zA-Z]:[/\\]|src\/|lib\/|components\/|stores\/|hooks\/|utils\/|tests\/|__tests__\/)[\w.@/-]+\.\w{1,10}$/;
 
 /**
  * Pre-process markdown to wrap bare file paths in backticks so the existing
@@ -527,25 +511,26 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({ content, classN
       if (className) return <code className={className}>{children}</code>;
 
       const text = extractText(children).trim();
-      const ext = text.split('.').pop()?.toLowerCase() ?? '';
-      if (((FILE_PATH_RE.test(text) || KNOWN_EXT_RE.test(text)) && KNOWN_FILE_EXTENSIONS.has(ext))) {
-        const resolved = text.startsWith('/') || /^[a-zA-Z]:[/\\]/.test(text)
-          ? text
-          : resolveBase ? `${resolveBase.replace(/\/$/, '')}/${text}` : text;
-        const fileName = text.split(/[\\/]/).pop() || text;
+      const kind = classifyPathToken(text);
+      if (kind) {
+        const resolved = resolvePathToken(text, resolveBase);
         return (
           <button
-            onClick={() => useFileStore.getState().selectFile(resolved)}
-            className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5
-              bg-accent/10 border border-accent/25 rounded-md
+            onClick={() => {
+              // 纯定位：右侧文件区展开到该路径并高亮（不读内容、不预览）
+              useSettingsStore.getState().setSecondaryTab('files');
+              useFileStore.getState().revealPath(resolved);
+            }}
+            className="inline-flex items-center gap-1 px-2 py-0.5 mx-0.5
+              bg-bg-secondary border border-accent/50 rounded-full
               text-xs text-accent font-medium cursor-pointer
-              hover:bg-accent/20 hover:border-accent/40
+              hover:bg-accent/10 hover:border-accent
               transition-all duration-150 select-none
               align-baseline leading-normal whitespace-nowrap"
             title={resolved}
           >
-            <span className="text-[10px]">📄</span>
-            <span className="max-w-[180px] truncate">{fileName}</span>
+            <span className="text-[10px] leading-none">{kind === 'folder' ? '📁' : '📄'}</span>
+            <span className="max-w-[240px] truncate">{text}</span>
           </button>
         );
       }
