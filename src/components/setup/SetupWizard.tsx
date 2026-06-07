@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useSetupStore } from '../../stores/setupStore';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useProviderStore } from '../../stores/providerStore';
 import { useT } from '../../lib/i18n';
 import { stripAnsi } from '../../lib/strip-ansi';
 import { AiAvatar } from '../shared/AiAvatar';
@@ -56,6 +57,16 @@ export function SetupWizard() {
   const [downloadPhase, setDownloadPhase] = useState<string>('');
   const [showApiPrompt, setShowApiPrompt] = useState(false);
 
+  // NOVA: 检查当前活动提供商是否缺少 API key，若无则自动打开设置
+  const checkAndOpenSettings = useCallback(() => {
+    const provider = useProviderStore.getState().getActive();
+    if (provider && !provider.apiKey) {
+      setTimeout(() => {
+        useSettingsStore.setState({ settingsOpen: true });
+      }, 300);
+    }
+  }, []);
+
   // Auto-detect CLI on mount — skip wizard entirely if found
   useEffect(() => {
     let cancelled = false;
@@ -69,6 +80,9 @@ export function SetupWizard() {
           // NOVA: 首次启动显示 API 引导
           if (!localStorage.getItem('nova-api-prompt-shown')) {
             setTimeout(() => setShowApiPrompt(true), 500);
+          } else {
+            // 引导已关闭过，但可能仍缺 API key — 自动弹设置
+            setTimeout(() => checkAndOpenSettings(), 500);
           }
           return;
         }
@@ -113,6 +127,8 @@ export function SetupWizard() {
           const hasSeenPrompt = localStorage.getItem('nova-api-prompt-shown');
           if (!hasSeenPrompt) {
             setTimeout(() => setShowApiPrompt(true), 800);
+          } else {
+            setTimeout(() => checkAndOpenSettings(), 800);
           }
         }, 1200);
       } else {
@@ -293,6 +309,8 @@ export function SetupWizard() {
           onClose={() => {
             localStorage.setItem('nova-api-prompt-shown', '1');
             setShowApiPrompt(false);
+            // NOVA: 弹窗关闭后检查是否还没填 API key，没填就弹设置
+            checkAndOpenSettings();
           }}
           onUpgrade={() => {
             localStorage.setItem('nova-api-prompt-shown', '1');

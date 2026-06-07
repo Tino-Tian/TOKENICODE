@@ -20,12 +20,12 @@
   --color-bg-card: #080c14;
   --color-bg-nav-active: rgba(0, 168, 232, 0.08);
 
-  /* 文字色系 */
-  --color-text-primary: #5a7288;
-  --color-text-secondary: #4a6578;
-  --color-text-tertiary: #3a4a5a;
+  /* 文字色系 — 极夜黑背景需要亮色文字 */
+  --color-text-primary: #c8d8e8;
+  --color-text-secondary: #8899aa;
+  --color-text-tertiary: #5a7288;
   --color-text-inverse: #080c14;
-  --color-text-muted: #3a4a5a;
+  --color-text-muted: #5a7288;
 
   /* 边框色系 */
   --color-border: #141c28;
@@ -81,11 +81,11 @@
   --color-bg-thinking: #0a101c;
   --color-bg-card: #080c14;
   --color-bg-nav-active: rgba(0, 168, 232, 0.08);
-  --color-text-primary: #5a7288;
-  --color-text-secondary: #4a6578;
-  --color-text-tertiary: #3a4a5a;
+  --color-text-primary: #c8d8e8;
+  --color-text-secondary: #8899aa;
+  --color-text-tertiary: #5a7288;
   --color-text-inverse: #080c14;
-  --color-text-muted: #3a4a5a;
+  --color-text-muted: #5a7288;
   --color-border: #141c28;
   --color-border-subtle: #141c28;
   --color-border-focus: #00a8e8;

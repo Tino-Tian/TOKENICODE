@@ -123,7 +123,7 @@ function UserMsg({ message }: Props) {
 
   return (
     <div style={{
-      borderLeft: '2px solid #1a3a4a',
+      borderLeft: '2px solid #2a4a5a',
       padding: '0 0 0 14px',
       marginBottom: '16px',
       marginLeft: 'auto',
@@ -131,7 +131,7 @@ function UserMsg({ message }: Props) {
     }}>
       <div style={{
         fontSize: '9px',
-        color: '#3a5a6a',
+        color: '#7a9aae',
         fontFamily: 'monospace',
         letterSpacing: '2px',
         marginBottom: '6px'
@@ -139,7 +139,7 @@ function UserMsg({ message }: Props) {
         USER
       </div>
       <div style={{
-        color: '#8aa0b0',
+        color: '#c0d0e0',
         fontSize: '12px',
         fontFamily: 'monospace',
         lineHeight: '1.8',
@@ -147,7 +147,7 @@ function UserMsg({ message }: Props) {
       }}>
         {renderUserContent(displayContent)}
         {!expanded && isLong && (
-          <span style={{ color: '#3a4a5a' }}>…</span>
+          <span style={{ color: '#6a8a9a' }}>…</span>
         )}
       </div>
       {isLong && (
@@ -157,7 +157,7 @@ function UserMsg({ message }: Props) {
             display: 'block',
             marginTop: '6px',
             fontSize: '10px',
-            color: '#3a5a6a',
+            color: '#7a9aae',
             fontFamily: 'monospace',
             background: 'none',
             border: 'none',
@@ -189,10 +189,10 @@ function UserMsg({ message }: Props) {
                 cursor: 'pointer',
                 fontFamily: 'monospace',
                 fontSize: '10px',
-                color: '#4a6578'
+                color: '#8899aa'
               }}
             >
-              <span style={{ color: '#3a4a5a' }}>📎</span>
+              <span style={{ color: '#6a8a9a' }}>📎</span>
               <span>{att.name}</span>
             </button>
           ))}
@@ -423,7 +423,7 @@ function AssistantMsg({ message, isFirstInGroup = true }: Props) {
         </div>
       )}
       <div style={{
-        color: '#5a7288',
+        color: '#c0d0e0',
         fontSize: '12px',
         fontFamily: 'monospace',
         lineHeight: '1.8'
