@@ -826,7 +826,7 @@ export const ToolUseMsg = memo(function ToolUseMsg({ message }: Props) {
   const depth = message.subAgentDepth ?? 0;
 
   return (
-    <div className={depth > 0 ? 'ml-16 pl-3 border-l-2 border-accent/15' : 'ml-11'}>
+    <div className={depth > 0 ? 'ml-16 mr-11 pl-3 border-l-2 border-accent/15' : 'ml-11 mr-11'}>
       <button
         onClick={() => canExpand && setExpanded(!expanded)}
         className={`flex items-center gap-1.5 py-1 text-left group
@@ -891,7 +891,7 @@ function ToolResultMsg({ message }: Props) {
     : '';
 
   return (
-    <div className={depth > 0 ? 'ml-16 pl-3 border-l-2 border-accent/15' : 'ml-11'}>
+    <div className={depth > 0 ? 'ml-16 mr-11 pl-3 border-l-2 border-accent/15' : 'ml-11 mr-11'}>
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex items-center gap-1.5 py-0.5 cursor-pointer group"
@@ -930,7 +930,7 @@ function ToolResultMsg({ message }: Props) {
 function ThinkingMsg({ message }: Props) {
   const t = useT();
   return (
-    <div className="ml-11">
+    <div className="ml-11 mr-11">
       <details className="group">
         <summary className="flex items-center gap-1.5 py-1
           cursor-pointer text-[11px] text-text-tertiary list-none select-none">
@@ -962,7 +962,7 @@ function PlanMsg({ message }: Props) {
   const items = message.planItems || (typeof message.content === 'string' ? message.content.split('\n').filter(Boolean) : []);
 
   return (
-    <div className="ml-11">
+    <div className="ml-11 mr-11">
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex items-center gap-1.5 py-1 cursor-pointer"
@@ -1009,7 +1009,7 @@ function TodoMsg({ message }: Props) {
   const inProgressItem = items.find((i) => i.status === 'in_progress');
 
   return (
-    <div className="ml-11">
+    <div className="ml-11 mr-11">
       {/* Header — collapsible */}
       <button
         onClick={() => setExpanded(!expanded)}

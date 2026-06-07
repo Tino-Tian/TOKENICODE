@@ -633,7 +633,7 @@ export function ChatPanel() {
             {isStreaming && partialThinking && (() => {
               const hasVisiblePartialText = partialText.trim().length > 0;
               return (
-              <div className="ml-11 mt-1">
+              <div className="ml-11 mr-11 mt-1">
                 <details
                   key={hasVisiblePartialText ? 'collapsed' : 'open'}
                   {...(!hasVisiblePartialText ? { open: true } : {})}
