@@ -28,7 +28,7 @@ import './App.css';
 const THEME_ACCENT_COLORS: Record<ColorTheme, string> = {
   black: '#FFFFFF',
   blue: '#4E80F7',
-  orange: '#C47252',
+  purple: '#9169BF',
   green: '#57A64B',
 };
 
@@ -553,11 +553,11 @@ function App() {
   // Apply color theme class to document
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove('theme-blue', 'theme-orange', 'theme-green');
+    root.classList.remove('theme-blue', 'theme-purple', 'theme-green');
     if (colorTheme === 'blue') {
       root.classList.add('theme-blue');
-    } else if (colorTheme === 'orange') {
-      root.classList.add('theme-orange');
+    } else if (colorTheme === 'purple') {
+      root.classList.add('theme-purple');
     } else if (colorTheme === 'green') {
       root.classList.add('theme-green');
     }

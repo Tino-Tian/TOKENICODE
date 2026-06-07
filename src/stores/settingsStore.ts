@@ -5,7 +5,7 @@ import { settingsEvents } from '../lib/settingsEvents';
 // --- Types ---
 
 export type Theme = 'light' | 'dark' | 'system';
-export type ColorTheme = 'black' | 'blue' | 'orange' | 'green';
+export type ColorTheme = 'black' | 'blue' | 'purple' | 'green';
 export type SecondaryPanelTab = 'files' | 'skills';
 export type ModelId =
   | 'claude-opus-4-8'

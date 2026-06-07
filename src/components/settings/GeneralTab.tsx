@@ -21,10 +21,10 @@ const COLOR_THEMES: { id: ColorTheme; labelKey: string; preview: string; preview
     previewDark: '#6B9AFF',
   },
   {
-    id: 'orange',
-    labelKey: 'settings.orange',
-    preview: '#C47252',
-    previewDark: '#D4856A',
+    id: 'purple',
+    labelKey: 'settings.purple',
+    preview: '#9169BF',
+    previewDark: '#A684CC',
   },
   {
     id: 'green',

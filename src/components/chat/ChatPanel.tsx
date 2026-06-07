@@ -692,6 +692,8 @@ export function ChatPanel() {
                 <div className="flex-1 min-w-0 text-base text-text-primary leading-relaxed">
                   <MarkdownRenderer content={partialText} />
                 </div>
+                {/* Right gutter mirrors the avatar so streaming text aligns with the user bubble's right edge */}
+                <div className="w-8 flex-shrink-0" />
               </div>
               );
             })()}

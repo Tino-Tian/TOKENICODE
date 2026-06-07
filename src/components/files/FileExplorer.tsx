@@ -488,8 +488,6 @@ export function FileExplorer() {
   const tree = useFileStore((s) => s.tree);
   const isLoading = useFileStore((s) => s.isLoading);
   const rootPath = useFileStore((s) => s.rootPath);
-  const changedFiles = useFileStore((s) => s.changedFiles);
-  const clearChangedFiles = useFileStore((s) => s.clearChangedFiles);
   const workingDirectory = useSettingsStore((s) => s.workingDirectory);
 
   const refreshTree = useFileStore((s) => s.refreshTree);
@@ -497,7 +495,6 @@ export function FileExplorer() {
   const createFolder = useFileStore((s) => s.createFolder);
   const isDragOverTree = useFileStore((s) => s.isDragOverTree);
   const showHiddenFiles = useSettingsStore((s) => s.showHiddenFiles);
-  const toggleHiddenFiles = useSettingsStore((s) => s.toggleHiddenFiles);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -522,8 +519,6 @@ export function FileExplorer() {
     }
     return filterNodes(tree);
   }, [tree, showHiddenFiles]);
-
-  const changedCount = changedFiles.size;
 
   const handleContextMenu = useCallback((e: React.MouseEvent, path: string, isDir: boolean) => {
     setContextMenu({ x: e.clientX, y: e.clientY, path, isDir });
@@ -675,125 +670,6 @@ export function FileExplorer() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2
-        border-b border-border-subtle">
-        <div className="flex items-center gap-2 min-w-0"
-          title={workingDirectory}>
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"
-            stroke="currentColor" strokeWidth="1.5"
-            className="text-accent flex-shrink-0">
-            <path d="M2 4h4l2 2h6v7H2V4z" />
-          </svg>
-          <div className="min-w-0">
-            <span className="text-[13px] font-medium text-text-primary
-              truncate block">
-              {workingDirectory.split(/[\\/]/).pop()}
-            </span>
-          </div>
-          {changedCount > 0 && (
-            <span className="text-xs px-1.5 py-0.5 rounded-full
-              bg-success/15 text-success
-              font-medium flex-shrink-0">
-              {changedCount} {t('files.changed')}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-0.5">
-          <button onClick={() => handleNewFile(workingDirectory || rootPath)}
-            className="p-1.5 rounded-lg hover:bg-bg-secondary active:bg-bg-tertiary
-              text-text-tertiary hover:text-text-secondary transition-smooth"
-            title={t('files.newFile')}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
-              stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <path d="M9 2H4v12h8V5l-3-3z" />
-              <path d="M8 7v4M6 9h4" />
-            </svg>
-          </button>
-          <button onClick={() => handleNewFolder(workingDirectory || rootPath)}
-            className="p-1.5 rounded-lg hover:bg-bg-secondary active:bg-bg-tertiary
-              text-text-tertiary hover:text-text-secondary transition-smooth"
-            title={t('files.newFolder')}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
-              stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <path d="M2 4h4l2 2h6v7H2V4z" />
-              <path d="M7 8v3M5.5 9.5h3" />
-            </svg>
-          </button>
-          <button onClick={toggleHiddenFiles}
-            className={`p-1.5 rounded-lg hover:bg-bg-secondary active:bg-bg-tertiary
-              transition-smooth ${showHiddenFiles ? 'text-accent' : 'text-text-tertiary hover:text-text-secondary'}`}
-            title={t('files.toggleHidden')}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
-              stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              {showHiddenFiles ? (
-                <>
-                  <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" />
-                  <circle cx="8" cy="8" r="2" />
-                </>
-              ) : (
-                <>
-                  <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" />
-                  <circle cx="8" cy="8" r="2" />
-                  <path d="M2 14L14 2" />
-                </>
-              )}
-            </svg>
-          </button>
-          <button onClick={() => {
-              clearChangedFiles();
-              const dir = workingDirectory || rootPath;
-              if (dir) refreshTree(dir);
-            }}
-            className="p-1.5 rounded-lg hover:bg-bg-secondary active:bg-bg-tertiary
-              text-text-tertiary hover:text-text-secondary transition-smooth"
-            title={t('files.refresh')}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
-              stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <path d="M1.5 7a5.5 5.5 0 0110-3M12.5 7a5.5 5.5 0 01-10 3" />
-              <path d="M11.5 1v3h-3M2.5 13v-3h3" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      {/* Search bar */}
-      <div className="px-2 py-1.5 border-b border-border-subtle">
-        <div className="relative">
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"
-            stroke="currentColor" strokeWidth="1.5"
-            className="absolute left-2 top-1/2 -translate-y-1/2 text-text-tertiary">
-            <circle cx="7" cy="7" r="5" />
-            <path d="M11 11l3 3" />
-          </svg>
-          <input
-            ref={searchRef}
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('files.search')}
-            className="w-full pl-7 pr-7 py-1 text-[13px] bg-bg-secondary/50
-              border border-border-subtle rounded-lg text-text-primary
-              placeholder:text-text-tertiary outline-none
-              focus:border-border-focus focus:bg-bg-input
-              transition-smooth"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2
-                p-0.5 rounded-lg text-text-tertiary hover:text-text-primary
-                transition-smooth"
-            >
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"
-                stroke="currentColor" strokeWidth="1.5">
-                <path d="M2 2l6 6M8 2l-6 6" />
-              </svg>
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* File tree */}
       <div className="flex-1 min-h-0 relative" data-file-tree>
         {isDragOverTree && (
@@ -885,6 +761,43 @@ export function FileExplorer() {
         )}
         </div>{/* end scroll container */}
       </div>{/* end data-file-tree wrapper */}
+
+      {/* Search bar — moved to bottom, borderless */}
+      <div className="py-1.5">
+        <div className="relative">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"
+            stroke="currentColor" strokeWidth="1.5"
+            className="absolute left-2 top-1/2 -translate-y-1/2 text-text-tertiary">
+            <circle cx="7" cy="7" r="5" />
+            <path d="M11 11l3 3" />
+          </svg>
+          <input
+            ref={searchRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('files.search')}
+            className="w-full pl-7 pr-7 py-1.5 text-[13px] bg-transparent
+              rounded-lg text-text-primary
+              placeholder:text-text-tertiary outline-none
+              hover:bg-bg-secondary focus:bg-bg-secondary
+              transition-smooth"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2
+                p-0.5 rounded-lg text-text-tertiary hover:text-text-primary
+                transition-smooth"
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"
+                stroke="currentColor" strokeWidth="1.5">
+                <path d="M2 2l6 6M8 2l-6 6" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Context menu */}
       {contextMenu && (

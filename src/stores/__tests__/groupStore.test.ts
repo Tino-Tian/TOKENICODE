@@ -224,4 +224,34 @@ describe('groupStore', () => {
       expect(group.pinnedInGroup).not.toContain('not-a-member');
     });
   });
+
+  describe('replaceSessionId (draft → 真实 id 同步)', () => {
+    it('把组内成员 id 从旧换成新（promote 后会话不掉出组）', () => {
+      const g = useGroupStore.getState().createGroup('~/ws', '组');
+      useGroupStore.getState().addToGroup('draft_1', g);
+      useGroupStore.getState().pinInGroup(g, 'draft_1');
+      useGroupStore.getState().replaceSessionId('draft_1', 'real-uuid');
+      const group = useGroupStore.getState().groups.find((x) => x.id === g)!;
+      expect(group.sessionIds).toEqual(['real-uuid']);
+      expect(group.pinnedInGroup).toEqual(['real-uuid']);
+    });
+
+    it('保留组内顺序，只替换目标 id', () => {
+      const g = useGroupStore.getState().createGroup('~/ws', '组');
+      useGroupStore.getState().addToGroup('a', g);
+      useGroupStore.getState().addToGroup('draft_1', g);
+      useGroupStore.getState().addToGroup('b', g);
+      useGroupStore.getState().replaceSessionId('draft_1', 'real-uuid');
+      const group = useGroupStore.getState().groups.find((x) => x.id === g)!;
+      expect(group.sessionIds).toEqual(['a', 'real-uuid', 'b']);
+    });
+
+    it('旧 id 不在任何组时安全 no-op', () => {
+      const g = useGroupStore.getState().createGroup('~/ws', '组');
+      useGroupStore.getState().addToGroup('s1', g);
+      useGroupStore.getState().replaceSessionId('ghost', 'x');
+      const group = useGroupStore.getState().groups.find((x) => x.id === g)!;
+      expect(group.sessionIds).toEqual(['s1']);
+    });
+  });
 });

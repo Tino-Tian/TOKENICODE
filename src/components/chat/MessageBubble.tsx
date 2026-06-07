@@ -138,7 +138,7 @@ function UserMsg({ message }: Props) {
   }, [content]);
 
   return (
-    <div className="flex justify-end gap-2.5 group/user relative">
+    <div className="flex justify-end gap-3 group/user relative">
       {/* Copy button — visible on hover */}
       <button
         onClick={handleCopy}
@@ -415,6 +415,8 @@ function AssistantMsg({ message, isFirstInGroup = true }: Props) {
       <div className="flex-1 min-w-0 text-base text-text-primary leading-relaxed">
         <MarkdownRenderer content={safeContent(message.content)} />
       </div>
+      {/* Right gutter mirrors the avatar so assistant text aligns with the user bubble's right edge */}
+      <div className="w-8 flex-shrink-0" />
     </div>
   );
 }

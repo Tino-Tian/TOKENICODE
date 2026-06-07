@@ -29,6 +29,9 @@ interface GroupState {
   reorderGroups: (workspace: string, orderedGroupIds: string[]) => void;
   pinInGroup: (groupId: string, sessionId: string) => void;
   unpinInGroup: (groupId: string, sessionId: string) => void;
+  /** Swap a session id everywhere in the ledger — used when a draft session is
+   *  promoted to its real CLI id, so it stays in its group instead of falling out. */
+  replaceSessionId: (oldId: string, newId: string) => void;
 
   getGroupsForWorkspace: (workspace: string) => SessionGroup[];
   getGroupOfSession: (sessionId: string) => SessionGroup | undefined;
@@ -136,6 +139,19 @@ export const useGroupStore = create<GroupState>()((set, get) => ({
           ? { ...g, pinnedInGroup: g.pinnedInGroup.filter((id) => id !== sessionId) }
           : g,
       ),
+    });
+  },
+
+  replaceSessionId: (oldId, newId) => {
+    set({
+      groups: get().groups.map((g) => {
+        if (!g.sessionIds.includes(oldId)) return g;
+        return {
+          ...g,
+          sessionIds: g.sessionIds.map((id) => (id === oldId ? newId : id)),
+          pinnedInGroup: g.pinnedInGroup.map((id) => (id === oldId ? newId : id)),
+        };
+      }),
     });
   },
 
