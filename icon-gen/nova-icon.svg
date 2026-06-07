@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" fill="#080c14"/>
+  <g transform="translate(512,512)">
+    <rect x="-220" y="-220" width="440" height="440" rx="0"
+      fill="none" stroke="#00a8e8" stroke-width="18"
+      transform="rotate(45)"/>
+    <text x="0" y="70" text-anchor="middle"
+      font-family="Menlo, Consolas, Monaco, monospace" font-size="260" font-weight="700"
+      fill="#00a8e8">N</text>
+  </g>
+</svg>
