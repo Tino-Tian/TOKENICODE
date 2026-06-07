@@ -478,6 +478,43 @@ export function FilePreview() {
         )}
       </div>
 
+      {/* NOVA: 代码面板底部操作栏 */}
+      <div style={{
+        padding: '6px 10px',
+        borderTop: '1px solid #141c28',
+        display: 'flex',
+        gap: '4px',
+        flexShrink: 0
+      }}>
+        <button style={{
+          fontSize: '8px',
+          color: '#3a4a5a',
+          border: '1px solid #1a2030',
+          padding: '3px 8px',
+          fontFamily: 'monospace',
+          background: 'transparent',
+          cursor: 'pointer'
+        }}>DIFF</button>
+        <button style={{
+          fontSize: '8px',
+          color: '#00a8e8',
+          border: '1px solid #1a3050',
+          padding: '3px 8px',
+          fontFamily: 'monospace',
+          background: 'transparent',
+          cursor: 'pointer'
+        }}>ACCEPT</button>
+        <button style={{
+          fontSize: '8px',
+          color: '#4a2020',
+          border: '1px solid #2a1818',
+          padding: '3px 8px',
+          fontFamily: 'monospace',
+          background: 'transparent',
+          cursor: 'pointer'
+        }}>REJECT</button>
+      </div>
+
       {/* Unsaved changes dialog */}
       {showUnsavedDialog && createPortal(
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40"

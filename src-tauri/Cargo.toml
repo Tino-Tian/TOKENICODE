@@ -1,8 +1,8 @@
 [package]
 name = "tokenicode"
-version = "0.10.8"
-description = "TOKENICODE - A beautiful GUI for Claude Code"
-authors = ["TinyZ"]
+version = "1.0.0"
+description = "NOVA - Claude Code Desktop GUI"
+authors = ["NOVA"]
 license = "Apache-2.0"
 edition = "2021"
 

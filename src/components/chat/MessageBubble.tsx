@@ -138,71 +138,82 @@ function UserMsg({ message }: Props) {
   }, [content]);
 
   return (
-    <div className="flex justify-end gap-2.5 group/user relative">
-      {/* Copy button — visible on hover */}
-      <button
-        onClick={handleCopy}
-        className="absolute -top-2 right-1 z-10 opacity-0 group-hover/user:opacity-100
-          px-1.5 py-0.5 rounded-md text-[10px] font-medium
-          bg-bg-tertiary/80 text-text-muted hover:text-text-primary
-          hover:bg-bg-tertiary border border-border-subtle
-          transition-smooth cursor-pointer"
-      >
-        {copied ? t('msg.copied') : t('msg.copyText')}
-      </button>
-      <div className="max-w-[75%] px-3.5 py-2.5 rounded-2xl rounded-br-md
-        bg-bg-user-msg text-text-inverse
-        text-sm leading-relaxed shadow-md whitespace-pre-wrap">
+    <div style={{
+      borderLeft: '2px solid #1a3a4a',
+      padding: '0 0 0 14px',
+      marginBottom: '16px',
+      marginLeft: 'auto',
+      maxWidth: '85%'
+    }}>
+      <div style={{
+        fontSize: '9px',
+        color: '#3a5a6a',
+        fontFamily: 'monospace',
+        letterSpacing: '2px',
+        marginBottom: '6px'
+      }}>
+        USER
+      </div>
+      <div style={{
+        color: '#8aa0b0',
+        fontSize: '12px',
+        fontFamily: 'monospace',
+        lineHeight: '1.8',
+        whiteSpace: 'pre-wrap'
+      }}>
         {renderUserContent(displayContent)}
         {!expanded && isLong && (
-          <span className="text-white/60">…</span>
-        )}
-        {isLong && (
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="block mt-1.5 text-xs text-white/60 hover:text-white/90
-              transition-smooth"
-          >
-            {expanded ? '▲ 收起' : '▼ 展开全部'}
-          </button>
-        )}
-        {attachments && attachments.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {attachments.map((att, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  if (att.isImage) {
-                    useLightboxStore.getState().openFile(att.path, att.name);
-                  } else {
-                    useFileStore.getState().selectFile(att.path);
-                  }
-                }}
-                className="inline-flex items-center gap-2 px-2.5 py-1.5
-                  bg-white/10 hover:bg-white/20 rounded-lg border border-white/15
-                  transition-smooth cursor-pointer text-left"
-              >
-                {att.isImage && att.preview ? (
-                  <img src={att.preview} alt="" className="w-8 h-8 rounded object-cover" />
-                ) : (
-                  <span className="flex items-center justify-center w-8 h-8 rounded
-                    bg-white/10 text-[10px] font-mono font-semibold uppercase opacity-80">
-                    {getFileExt(att.name) || (
-                      <svg width="14" height="14" viewBox="0 0 12 12" fill="none"
-                        stroke="currentColor" strokeWidth="1.2">
-                        <path d="M7 1H3a1 1 0 00-1 1v8a1 1 0 001 1h6a1 1 0 001-1V4L7 1z" />
-                        <path d="M7 1v3h3" />
-                      </svg>
-                    )}
-                  </span>
-                )}
-                <span className="text-xs truncate max-w-[180px]">{att.name}</span>
-              </button>
-            ))}
-          </div>
+          <span style={{ color: '#3a4a5a' }}>…</span>
         )}
       </div>
-      <UserAvatar size="w-8 h-8 text-xs" className="mt-0.5" />
+      {isLong && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          style={{
+            display: 'block',
+            marginTop: '6px',
+            fontSize: '10px',
+            color: '#3a5a6a',
+            fontFamily: 'monospace',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer'
+          }}
+        >
+          {expanded ? '▲ 收起' : '▼ 展开全部'}
+        </button>
+      )}
+      {attachments && attachments.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+          {attachments.map((att, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                if (att.isImage) {
+                  useLightboxStore.getState().openFile(att.path, att.name);
+                } else {
+                  useFileStore.getState().selectFile(att.path);
+                }
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 10px',
+                background: '#0d1520',
+                border: '1px solid #1a2030',
+                cursor: 'pointer',
+                fontFamily: 'monospace',
+                fontSize: '10px',
+                color: '#4a6578'
+              }}
+            >
+              <span style={{ color: '#3a4a5a' }}>📎</span>
+              <span>{att.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -404,17 +415,57 @@ function CommandFeedbackMsg({ message }: Props) {
    AssistantMsg — markdown with avatar (uses shared MarkdownRenderer)
    ================================================================ */
 function AssistantMsg({ message, isFirstInGroup = true }: Props) {
+  const content = safeContent(message.content);
+  // Extract first filename from content for code panel linking
+  const fileNameMatch = content.match(/📄\s*(\S+\.\w{1,10})/);
+  const fileName = fileNameMatch ? fileNameMatch[1] : null;
+
   return (
-    <div className="flex gap-3">
-      {/* Avatar: show only for the first message in a consecutive group */}
-      {isFirstInGroup ? (
-        <AiAvatar size="w-8 h-8" className="mt-0.5" />
-      ) : (
-        <div className="w-8 flex-shrink-0" />
+    <div style={{
+      borderLeft: '2px solid #00a8e8',
+      padding: '0 0 0 14px',
+      marginBottom: '16px',
+      maxWidth: '90%'
+    }}>
+      {isFirstInGroup && (
+        <div style={{
+          fontSize: '9px',
+          color: '#00a8e8',
+          fontFamily: 'monospace',
+          letterSpacing: '2px',
+          marginBottom: '6px'
+        }}>
+          NOVA
+        </div>
       )}
-      <div className="flex-1 min-w-0 text-base text-text-primary leading-relaxed">
-        <MarkdownRenderer content={safeContent(message.content)} />
+      <div style={{
+        color: '#5a7288',
+        fontSize: '12px',
+        fontFamily: 'monospace',
+        lineHeight: '1.8'
+      }}>
+        <MarkdownRenderer content={content} />
       </div>
+      {fileName && (
+        <button
+          onClick={() => {
+            const wd = useSettingsStore.getState().workingDirectory || '';
+            const resolved = wd ? `${wd.replace(/\/$/, '')}/${fileName}` : fileName;
+            useFileStore.getState().selectFile(resolved);
+          }}
+          style={{
+            marginTop: '8px',
+            fontSize: '9px',
+            color: '#00a8e8',
+            fontFamily: 'monospace',
+            border: '1px solid #1a3050',
+            padding: '2px 8px',
+            background: 'transparent',
+            cursor: 'pointer'
+          }}>
+          [查看 {fileName}]
+        </button>
+      )}
     </div>
   );
 }

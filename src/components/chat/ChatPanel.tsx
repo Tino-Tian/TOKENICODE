@@ -557,12 +557,24 @@ export function ChatPanel() {
         <div className="ml-auto flex items-center" />
         <UpdateButton />
         <ExportMenu sessionPath={currentSessionPath} />
+        <button onClick={() => {
+          const store = useFileStore.getState();
+          if (store.selectedFile) store.closePreview();
+        }}
+          className="px-2 py-1 text-[10px] font-mono text-text-tertiary
+            border border-border-subtle hover:text-accent hover:border-accent
+            transition-colors"
+          style={{ letterSpacing: '1px' }}
+          title="打开/关闭代码面板">
+          [CODE PANEL]
+        </button>
         <button onClick={toggleSecondaryPanel}
-          className="p-1.5 rounded-lg hover:bg-bg-tertiary text-text-tertiary
-            transition-smooth" title={t('chat.toggleFiles')}>
+          className="p-1.5 hover:bg-bg-tertiary text-text-tertiary
+            transition-smooth" title={t('chat.toggleFiles')}
+          style={{ borderRadius: '0' }}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
             stroke="currentColor" strokeWidth="1.5">
-            <rect x="1" y="2" width="14" height="12" rx="2" />
+            <rect x="1" y="2" width="14" height="12" rx="0" />
             <path d="M10 2v12" />
           </svg>
         </button>
@@ -872,7 +884,7 @@ async function startDraftSession(folderPath: string) {
         }
       },
       onStderr: (line: string) => {
-        console.warn('[TOKENICODE] pre-warm stderr:', line);
+        console.warn('[NOVA] pre-warm stderr:', line);
       },
       setRunning: false,
     });
