@@ -36,7 +36,7 @@ flate2 = "1"
 tar = "0.4"
 zip = "2"
 sha2 = "0.10"
-tauri-plugin-mcp = { git = "https://github.com/P3GLEG/tauri-plugin-mcp" }
+tauri-plugin-mcp = "0.8.0-alpha.4"
 
 [dev-dependencies]
 tempfile = "3"
