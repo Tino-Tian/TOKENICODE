@@ -252,7 +252,7 @@ function SearchResultItem({
     <button
       onClick={() => { if (!node.is_dir) selectFile(node.path); }}
       onContextMenu={(e) => { e.preventDefault(); onContextMenu(e, node.path, node.is_dir); }}
-      className={`w-full flex items-center gap-2 py-1.5 px-3 rounded-lg
+      className={`w-full flex items-center gap-1.5 py-1.5 px-3 rounded-md
         text-left text-[13px] transition-smooth group
         ${isSelected
           ? 'bg-accent/10 text-accent'
@@ -261,7 +261,9 @@ function SearchResultItem({
             : 'text-text-muted hover:bg-bg-secondary hover:text-text-primary'
         }`}
     >
-      <FileIcon name={node.name} isDir={node.is_dir} size={14} className="flex-shrink-0" />
+      <span className="flex-shrink-0 w-4 flex items-center justify-center">
+        <FileIcon name={node.name} isDir={node.is_dir} size={14} className="text-accent" />
+      </span>
       <span className="truncate">{node.name}</span>
       {relDir && (
         <span className="ml-auto text-xs text-text-tertiary truncate max-w-[40%] flex-shrink-0">
@@ -389,7 +391,7 @@ function TreeNode({
           onContextMenu(e, node.path, node.is_dir);
         }}
         {...(node.is_dir ? { 'data-dir-path': node.path } : {})}
-        className={`w-full flex items-center gap-2 py-1.5 px-2 rounded-lg
+        className={`w-full flex items-center gap-1.5 py-1.5 px-2 rounded-md
           text-left text-[13px] transition-smooth group
           ${isSelected
             ? 'bg-accent/10 text-accent'
@@ -399,17 +401,18 @@ function TreeNode({
           }`}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
       >
-        {node.is_dir && (
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"
-            stroke="currentColor" strokeWidth="1.5"
-            className={`flex-shrink-0 transition-transform duration-150
-              ${isExpanded ? 'rotate-90' : ''}`}>
-            <path d="M3 2l4 3-4 3" />
-          </svg>
-        )}
-        {!node.is_dir && <span className="w-2.5" />}
-        <FileIcon name={node.name} isDir={node.is_dir} size={14}
-          className={`flex-shrink-0 ${node.is_dir ? 'text-accent/70 dark:text-accent' : ''}`} />
+        <span className="flex-shrink-0 w-3.5 flex items-center">
+          {node.is_dir ? (
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"
+              stroke="currentColor" strokeWidth="1.5"
+              className={`text-text-tertiary transition-transform duration-150
+                ${isExpanded ? 'rotate-90' : ''}`}>
+              <path d="M3 2l4 3-4 3" />
+            </svg>
+          ) : (
+            <FileIcon name={node.name} size={14} className="text-accent" />
+          )}
+        </span>
         {renamingPath === node.path ? (
           <input
             autoFocus
