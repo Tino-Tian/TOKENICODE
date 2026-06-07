@@ -15,7 +15,7 @@ export default defineConfig(async () => ({
 
   define: {
     __APP_EDITION__: JSON.stringify(edition),
-    __APP_NAME__: JSON.stringify(edition === 'alpha' ? 'TCAlpha' : 'TOKENICODE'),
+    __APP_NAME__: JSON.stringify(edition === 'alpha' ? 'NOVA Alpha' : 'NOVA'),
   },
 
   test: {

@@ -133,7 +133,7 @@ function nextTheme(current: Theme): Theme {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
-      theme: 'system',
+      theme: 'dark',
       colorTheme: 'black',
       sidebarOpen: true,
       secondaryPanelOpen: false,

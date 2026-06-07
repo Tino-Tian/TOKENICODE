@@ -10,7 +10,7 @@ const messages: Record<Locale, Record<string, string>> = {
     // Common
     'common.cancel': '取消',
     'common.confirm': '确认',
-    'confirm.exit': '确定要退出 TOKENICODE 吗？正在运行的任务将被终止。',
+    'confirm.exit': '确定要退出 NOVA 吗？正在运行的任务将被终止。',
 
     // Sidebar
     'sidebar.hide': '收起侧栏',
@@ -27,8 +27,8 @@ const messages: Record<Locale, Record<string, string>> = {
     'chat.turns': '轮',
     'chat.toggleFiles': '切换文件面板',
     'chat.scrollToBottom': '滚动到底部',
-    'chat.welcome': `欢迎使用 ${APP_NAME}`,
-    'chat.welcomeWithProject': '开始与 Claude Code 协作，CLI 会话在后台无缝运行。',
+    'chat.welcome': APP_NAME,
+    'chat.welcomeWithProject': '能力框架 Claude Code',
     'chat.welcomeNoProject': '选择一个项目文件夹以开始。',
 
     // InputBar
@@ -743,7 +743,7 @@ const messages: Record<Locale, Record<string, string>> = {
     // Common
     'common.cancel': 'Cancel',
     'common.confirm': 'Confirm',
-    'confirm.exit': 'Are you sure you want to quit TOKENICODE? Running tasks will be terminated.',
+    'confirm.exit': 'Are you sure you want to quit NOVA? Running tasks will be terminated.',
 
     // Sidebar
     'sidebar.hide': 'Hide sidebar',

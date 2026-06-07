@@ -2,341 +2,139 @@
 @plugin "@tailwindcss/typography";
 
 /* ================================================================
-   Default theme (Black) — light mode — clean solid
+   NOVA Theme — 极夜黑 + 冰蓝 (NOVA: Midnight Black + Ice Blue)
+   Design: 直角 / 等宽字体 / 细线分隔 / 左边框标记
    ================================================================ */
 @theme {
-  --color-bg-primary: #F8F8FA;
-  --color-bg-secondary: #F0F0F2;
-  --color-bg-tertiary: #E8E8EA;
-  --color-bg-chat: #FFFFFF;
-  --color-bg-sidebar: #F5F5F7;
-  --color-bg-input: #FFFFFF;
-  --color-bg-user-msg: #333333;
-  --color-bg-assistant-msg: #F8F8FA;
-  --color-bg-tool: #F3F3F5;
-  --color-bg-thinking: #F0F0F2;
-  --color-bg-card: #FFFFFF;
-  --color-bg-nav-active: rgba(0, 0, 0, 0.04);
+  /* 背景色系 — 极夜黑 */
+  --color-bg-primary: #080c14;
+  --color-bg-secondary: #0a0f1a;
+  --color-bg-tertiary: #0d1520;
+  --color-bg-chat: #0a0f1a;
+  --color-bg-sidebar: #080c14;
+  --color-bg-input: #0d1520;
+  --color-bg-user-msg: #0d1520;
+  --color-bg-assistant-msg: #0a0f1a;
+  --color-bg-tool: #0d1520;
+  --color-bg-thinking: #0a101c;
+  --color-bg-card: #080c14;
+  --color-bg-nav-active: rgba(0, 168, 232, 0.08);
 
-  --color-text-primary: #1A1A1A;
-  --color-text-secondary: #555555;
-  --color-text-tertiary: #888888;
-  --color-text-inverse: #FFFFFF;
-  --color-text-muted: #777777;
+  /* 文字色系 */
+  --color-text-primary: #5a7288;
+  --color-text-secondary: #4a6578;
+  --color-text-tertiary: #3a4a5a;
+  --color-text-inverse: #080c14;
+  --color-text-muted: #3a4a5a;
 
-  --color-border: #E5E5EA;
-  --color-border-subtle: #EBEBF0;
-  --color-border-focus: #333333;
+  /* 边框色系 */
+  --color-border: #141c28;
+  --color-border-subtle: #141c28;
+  --color-border-focus: #00a8e8;
 
-  --color-accent: #333333;
-  --color-accent-light: #555555;
-  --color-accent-hover: #1A1A1A;
-  --color-accent-glow: rgba(0, 0, 0, 0.06);
-  --color-success: #10b981;
-  --color-error: #ef4444;
-  --color-warning: #f59e0b;
+  /* 强调色 — 冰蓝 */
+  --color-accent: #00a8e8;
+  --color-accent-light: #1a3050;
+  --color-accent-hover: #0098d0;
+  --color-accent-glow: rgba(0, 168, 232, 0.08);
+  --color-success: #00a8e8;
+  --color-error: #ff4444;
+  --color-warning: #e8a800;
 
-  --color-gradient-start: #333333;
-  --color-gradient-mid: #444444;
-  --color-gradient-end: #555555;
+  /* 渐变色 */
+  --color-gradient-start: #00a8e8;
+  --color-gradient-mid: #0088c0;
+  --color-gradient-end: #006898;
 
-  /* Syntax highlighting — decoupled from semantic colors */
-  --color-syntax-keyword:  #7C3AED;
-  --color-syntax-string:   #059669;
-  --color-syntax-number:   #D97706;
-  --color-syntax-function: #2563EB;
-  --color-syntax-comment:  #9CA3AF;
-  --color-syntax-type:     #0891B2;
-  --color-syntax-builtin:  #6366F1;
-  --color-syntax-delete:   #DC2626;
-  --color-syntax-meta:     #78716C;
+  /* 语法高亮 */
+  --color-syntax-keyword:  #569cd6;
+  --color-syntax-string:   #4ec9b0;
+  --color-syntax-number:   #b5cea8;
+  --color-syntax-function: #dcdcaa;
+  --color-syntax-comment:  #4a5568;
+  --color-syntax-type:     #4ec9b0;
+  --color-syntax-builtin:  #569cd6;
+  --color-syntax-delete:   #f44747;
+  --color-syntax-meta:     #6a6a6a;
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04),
-    0 1px 2px rgba(0, 0, 0, 0.02);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06),
-    0 2px 4px rgba(0, 0, 0, 0.03);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08),
-    0 4px 8px rgba(0, 0, 0, 0.04);
-  --shadow-glow: 0 0 20px rgba(0, 0, 0, 0.06);
+  /* 阴影 — 极简 */
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-glow: 0 0 2px rgba(0, 168, 232, 0.3);
 
-  /* Icon slash color — same as brackets in default theme */
-  --color-icon-slash: white;
+  --color-icon-slash: #00a8e8;
 }
 
+/* 暗色模式 — 与默认相同 */
 @variant dark (&:where(.dark, .dark *));
-
-/* ================================================================
-   Black — dark mode
-   ================================================================ */
 .dark {
-  --color-bg-primary: #141414;
-  --color-bg-secondary: #1C1C1E;
-  --color-bg-tertiary: #2C2C2E;
-  --color-bg-chat: #0A0A0A;
-  --color-bg-sidebar: #1C1C1E;
-  --color-bg-input: #1C1C1E;
-  --color-bg-user-msg: #D0D0D0;
-  --color-bg-assistant-msg: #1A1A1C;
-  --color-bg-tool: #1E1E20;
-  --color-bg-thinking: #1A1A1C;
-  --color-bg-card: #1C1C1E;
-
-  --color-text-primary: #F0F0F0;
-  --color-text-secondary: #B0B0B0;
-  --color-text-tertiary: #8C8C8C;
-  --color-text-inverse: #101010;
-  --color-text-muted: #A3A3A3;
-
-  --color-border: #38383A;
-  --color-border-subtle: #2C2C2E;
-  --color-border-focus: #D0D0D0;
-
-  --color-accent: #D0D0D0;
-  --color-accent-light: #E0E0E0;
-  --color-accent-hover: #FFFFFF;
-  --color-accent-glow: rgba(255, 255, 255, 0.08);
-
-  --color-gradient-start: #D0D0D0;
-  --color-gradient-mid: #E0E0E0;
-  --color-gradient-end: #F0F0F0;
-
-  /* Syntax highlighting — dark mode */
-  --color-syntax-keyword:  #A78BFA;
-  --color-syntax-string:   #34D399;
-  --color-syntax-number:   #FBBF24;
-  --color-syntax-function: #60A5FA;
-  --color-syntax-comment:  #6B7280;
-  --color-syntax-type:     #22D3EE;
-  --color-syntax-builtin:  #818CF8;
-  --color-syntax-delete:   #F87171;
-  --color-syntax-meta:     #A8A29E;
-
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 20px rgba(255, 255, 255, 0.06);
-
-  /* Icon slash color — same as brackets in default theme */
-  --color-icon-slash: black;
+  --color-bg-primary: #080c14;
+  --color-bg-secondary: #0a0f1a;
+  --color-bg-tertiary: #0d1520;
+  --color-bg-chat: #0a0f1a;
+  --color-bg-sidebar: #080c14;
+  --color-bg-input: #0d1520;
+  --color-bg-user-msg: #0d1520;
+  --color-bg-assistant-msg: #0a0f1a;
+  --color-bg-tool: #0d1520;
+  --color-bg-thinking: #0a101c;
+  --color-bg-card: #080c14;
+  --color-bg-nav-active: rgba(0, 168, 232, 0.08);
+  --color-text-primary: #5a7288;
+  --color-text-secondary: #4a6578;
+  --color-text-tertiary: #3a4a5a;
+  --color-text-inverse: #080c14;
+  --color-text-muted: #3a4a5a;
+  --color-border: #141c28;
+  --color-border-subtle: #141c28;
+  --color-border-focus: #00a8e8;
+  --color-accent: #00a8e8;
+  --color-accent-light: #1a3050;
+  --color-accent-hover: #0098d0;
+  --color-accent-glow: rgba(0, 168, 232, 0.08);
+  --color-success: #00a8e8;
+  --color-error: #ff4444;
+  --color-warning: #e8a800;
+  --color-gradient-start: #00a8e8;
+  --color-gradient-mid: #0088c0;
+  --color-gradient-end: #006898;
+  --color-icon-slash: #00a8e8;
 }
 
 /* ================================================================
-   Blue theme — light mode
+   背景 / 用户消息气泡 / 按钮
    ================================================================ */
-.theme-blue {
-  --color-bg-user-msg: #4E80F7;
-  --color-bg-nav-active: rgba(78, 128, 247, 0.06);
-
-  --color-text-secondary: #4E80F7;
-  --color-border-focus: #4E80F7;
-
-  --color-accent: #4E80F7;
-  --color-accent-light: #6B9AFF;
-  --color-accent-hover: #3D6FE6;
-  --color-accent-glow: rgba(78, 128, 247, 0.10);
-
-  --color-gradient-start: #4E80F7;
-  --color-gradient-mid: #5C8EFF;
-  --color-gradient-end: #6B9AFF;
-
-  /* Syntax — blue accent: swap function to avoid blue-on-blue */
-  --color-syntax-keyword:  #9333EA;
-  --color-syntax-function: #0891B2;
-
-  --shadow-glow: 0 0 20px rgba(78, 128, 247, 0.10);
-
-  --color-icon-slash: var(--color-accent);
-}
-
-/* Blue — dark mode */
-.theme-blue.dark,
-.dark.theme-blue {
-  --color-bg-user-msg: #6B9AFF;
-
-  --color-text-secondary: #6B9AFF;
-  --color-border-focus: #6B9AFF;
-
-  --color-accent: #6B9AFF;
-  --color-accent-light: #8AB2FF;
-  --color-accent-hover: #4E80F7;
-  --color-accent-glow: rgba(107, 154, 255, 0.15);
-
-  --color-gradient-start: #4E80F7;
-  --color-gradient-mid: #5C8EFF;
-  --color-gradient-end: #6B9AFF;
-
-  /* Syntax — blue dark */
-  --color-syntax-keyword:  #C084FC;
-  --color-syntax-function: #22D3EE;
-
-  --shadow-glow: 0 0 20px rgba(107, 154, 255, 0.10);
-
-  --color-icon-slash: var(--color-accent);
-}
-
-/* ================================================================
-   Orange theme — light mode
-   ================================================================ */
-.theme-orange {
-  --color-bg-user-msg: #C47252;
-  --color-bg-nav-active: rgba(196, 114, 82, 0.06);
-
-  --color-text-secondary: #C47252;
-  --color-border-focus: #C47252;
-
-  --color-accent: #C47252;
-  --color-accent-light: #D4856A;
-  --color-accent-hover: #B06141;
-  --color-accent-glow: rgba(196, 114, 82, 0.10);
-  --color-warning: #E8A86D;
-
-  --color-gradient-start: #C47252;
-  --color-gradient-mid: #CC7E5E;
-  --color-gradient-end: #D4856A;
-
-  /* Syntax — orange accent: swap number to avoid amber-on-orange */
-  --color-syntax-number:   #2563EB;
-  --color-syntax-function: #0891B2;
-
-  --shadow-glow: 0 0 20px rgba(196, 114, 82, 0.10);
-
-  --color-icon-slash: var(--color-accent);
-}
-
-/* Orange — dark mode */
-.theme-orange.dark,
-.dark.theme-orange {
-  --color-bg-user-msg: #D4856A;
-
-  --color-text-secondary: #D4856A;
-  --color-border-focus: #D4856A;
-
-  --color-accent: #D4856A;
-  --color-accent-light: #E09882;
-  --color-accent-hover: #C47252;
-  --color-accent-glow: rgba(212, 133, 106, 0.15);
-
-  --color-gradient-start: #C47252;
-  --color-gradient-mid: #CC7E5E;
-  --color-gradient-end: #D4856A;
-
-  /* Syntax — orange dark */
-  --color-syntax-number:   #60A5FA;
-  --color-syntax-function: #22D3EE;
-
-  --shadow-glow: 0 0 20px rgba(212, 133, 106, 0.10);
-
-  --color-icon-slash: var(--color-accent);
-}
-
-/* ================================================================
-   Green theme — light mode
-   ================================================================ */
-.theme-green {
-  --color-bg-user-msg: #57A64B;
-  --color-bg-nav-active: rgba(87, 166, 75, 0.06);
-
-  --color-text-secondary: #4CA85A;
-  --color-border-focus: #57A64B;
-
-  --color-accent: #57A64B;
-  --color-accent-light: #6DBF62;
-  --color-accent-hover: #56AD63;
-  --color-accent-glow: rgba(87, 166, 75, 0.10);
-  --color-success: #57A64B;
-
-  --color-gradient-start: #57A64B;
-  --color-gradient-mid: #73C880;
-  --color-gradient-end: #6DBF62;
-
-  /* Syntax — green accent: swap string to avoid green-on-green */
-  --color-syntax-string:   #D97706;
-  --color-syntax-function: #0891B2;
-
-  --shadow-glow: 0 0 20px rgba(87, 166, 75, 0.10);
-
-  --color-icon-slash: var(--color-accent);
-}
-
-/* Green — dark mode */
-.theme-green.dark,
-.dark.theme-green {
-  --color-bg-user-msg: #6DBF62;
-
-  --color-text-secondary: #6DBF62;
-  --color-border-focus: #6DBF62;
-
-  --color-accent: #6DBF62;
-  --color-accent-light: #97DEA2;
-  --color-accent-hover: #57A64B;
-  --color-accent-glow: rgba(109, 191, 98, 0.15);
-
-  --color-gradient-start: #57A64B;
-  --color-gradient-mid: #73C880;
-  --color-gradient-end: #6DBF62;
-
-  /* Syntax — green dark */
-  --color-syntax-string:   #FBBF24;
-  --color-syntax-function: #22D3EE;
-
-  --shadow-glow: 0 0 20px rgba(109, 191, 98, 0.10);
-
-  --color-icon-slash: var(--color-accent);
-}
-
-/* ================================================================
-   Solid backgrounds — all themes
-   ================================================================ */
-
-/* Light mode */
 .gradient-bg {
-  background: #F5F5F7;
+  background: #080c14;
 }
-
-/* Dark mode — all themes */
 .dark .gradient-bg {
-  background: #1C1C1E;
+  background: #080c14;
 }
-
-/* ================================================================
-   User message bubble — subtle shadow
-   ================================================================ */
 .bg-bg-user-msg {
-  box-shadow: 0 2px 8px var(--color-accent-glow);
+  box-shadow: none;
 }
-
 .dark .bg-bg-user-msg {
-  box-shadow: 0 2px 12px var(--color-accent-glow);
+  box-shadow: none;
 }
-
-/* Accent button treatment */
 .bg-accent {
-  box-shadow: 0 1px 4px var(--color-accent-glow);
+  box-shadow: none;
 }
-
 .dark .bg-accent {
-  box-shadow: 0 1px 6px var(--color-accent-glow);
+  box-shadow: none;
 }
 
 /* ================================================================
-   Accessibility & performance
+   A11y & base
    ================================================================ */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     transition-duration: 0s !important;
     animation-duration: 0s !important;
   }
 }
 
-/* ================================================================
-   Base styles
-   ================================================================ */
-* {
-  box-sizing: border-box;
-}
-
+* { box-sizing: border-box; }
 html, body, #root {
   height: 100%;
   margin: 0;
@@ -344,141 +142,58 @@ html, body, #root {
   overflow: hidden;
 }
 
+/* 全局等宽字体 + 直角 */
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC',
-    'Segoe UI', 'Roboto', 'Helvetica Neue',
-    Arial, sans-serif;
+  font-family: 'Menlo', 'Consolas', 'Monaco', 'Courier New', monospace;
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Disable text selection and context menu globally for native app feel */
   user-select: none;
   -webkit-user-select: none;
 }
+body *,
+body *::before,
+body *::after {
+  border-radius: 0 !important;
+}
 
-/* Allow text selection only in input areas and message content */
 input, textarea, [contenteditable="true"],
 .message-content, .selectable {
   user-select: text;
   -webkit-user-select: text;
 }
 
-/* Scrollbar styling — auto-hide, thin, neutral color.
-   Uses CSS-only opacity transition on the scrollbar: invisible by default,
-   fades in on hover over the scrollable container. Works on both macOS and
-   Windows without depending on system scrollbar settings. */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 0; /* Hide horizontal scrollbar globally */
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: transparent;
-  border-radius: 3px;
-  transition: background 0.3s ease;
-}
-/* Show scrollbar thumb on container hover */
+/* 滚动条 */
+::-webkit-scrollbar { width: 6px; height: 0; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: transparent; border-radius: 0; transition: background 0.3s ease; }
 *:hover > ::-webkit-scrollbar-thumb,
-*:hover::-webkit-scrollbar-thumb {
-  background: rgba(128, 128, 128, 0.25);
-}
+*:hover::-webkit-scrollbar-thumb { background: rgba(128, 128, 128, 0.25); }
 *:hover > ::-webkit-scrollbar-thumb:hover,
-*:hover::-webkit-scrollbar-thumb:hover {
-  background: rgba(128, 128, 128, 0.45);
-}
+*:hover::-webkit-scrollbar-thumb:hover { background: rgba(128, 128, 128, 0.45); }
+* { scrollbar-width: thin; scrollbar-color: rgba(128, 128, 128, 0.2) transparent; }
 
-/* Firefox: thin scrollbar, auto-hide not supported natively — use neutral color */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(128, 128, 128, 0.2) transparent;
-}
-
-/* Accent text (formerly gradient-text) */
-.gradient-text {
-  color: var(--color-accent);
-}
-
-/* Pulse animation for streaming */
-@keyframes pulse-soft {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-.animate-pulse-soft {
-  animation: pulse-soft 1.5s ease-in-out infinite;
-}
-
-/* Typing indicator: 3 dots, light "moves" across via staggered animation-delay */
-@keyframes typing-dot {
-  0%, 60%, 100% {
-    opacity: 0.25;
-    transform: translateY(0);
-  }
-  30% {
-    opacity: 1;
-    transform: translateY(-3px);
-  }
-}
-.animate-typing-dot {
-  animation: typing-dot 1.2s ease-in-out infinite;
-}
-
-/* Indeterminate progress bar */
-@keyframes progress-indeterminate {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(400%); }
-}
-.animate-progress {
-  animation: progress-indeterminate 1.5s ease-in-out infinite;
-}
-
-/* Scale-in for cards */
-@keyframes scale-in {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
-}
-.animate-scale-in {
-  animation: scale-in 0.2s ease-out;
-}
-
-/* Slow spin for activity indicator asterisk */
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-.animate-spin-slow {
-  animation: spin-slow 2s linear infinite;
-  display: inline-block;
-}
-
-/* Smooth transitions for all interactive elements */
-.transition-smooth {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Fade in animation for modals */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-.animate-fade-in {
-  animation: fade-in 0.15s ease-out;
-}
-
-/* Title update animation (AI-generated title) */
-@keyframes title-update {
-  0% { opacity: 0.3; transform: translateY(4px); }
-  50% { opacity: 0.8; }
-  100% { opacity: 1; transform: translateY(0); }
-}
-.animate-title-update {
-  animation: title-update 0.5s ease-out;
-}
+/* 动画 */
+.gradient-text { color: var(--color-accent); }
+@keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+.animate-pulse-soft { animation: pulse-soft 1.5s ease-in-out infinite; }
+@keyframes typing-dot { 0%, 60%, 100% { opacity: 0.25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+.animate-typing-dot { animation: typing-dot 1.2s ease-in-out infinite; }
+@keyframes progress-indeterminate { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+.animate-progress { animation: progress-indeterminate 1.5s ease-in-out infinite; }
+@keyframes scale-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+.animate-scale-in { animation: scale-in 0.2s ease-out; }
+@keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.animate-spin-slow { animation: spin-slow 2s linear infinite; display: inline-block; }
+.transition-smooth { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes fade-in { from { opacity: 0; transform: translateY(-8px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.animate-fade-in { animation: fade-in 0.15s ease-out; }
+@keyframes title-update { 0% { opacity: 0.3; transform: translateY(4px); } 50% { opacity: 0.8; } 100% { opacity: 1; transform: translateY(0); } }
+.animate-title-update { animation: title-update 0.5s ease-out; }
 
 /* ================================================================
-   Prose / Typography overrides — map to theme CSS vars
+   Prose / Typography
    ================================================================ */
 .prose {
   --tw-prose-body: var(--color-text-primary);
@@ -498,129 +213,45 @@ input, textarea, [contenteditable="true"],
   --tw-prose-th-borders: var(--color-border);
   --tw-prose-td-borders: var(--color-border-subtle);
 }
-
-/* Ensure prose does not add extra margins that clash with our layout */
-.prose :where(p):not(:where([class~="not-prose"],[class~="not-prose"] *)) {
-  margin-top: 0.5em;
-  margin-bottom: 0.5em;
-}
-
-.prose :where(ul, ol):not(:where([class~="not-prose"],[class~="not-prose"] *)) {
-  margin-top: 0.5em;
-  margin-bottom: 0.5em;
-}
-
-.prose :where(li):not(:where([class~="not-prose"],[class~="not-prose"] *)) {
-  margin-top: 0.15em;
-  margin-bottom: 0.15em;
-}
-
-.prose :where(pre):not(:where([class~="not-prose"],[class~="not-prose"] *)) {
-  margin-top: 0.75em;
-  margin-bottom: 0.75em;
-}
-
+.prose :where(p):not(:where([class~="not-prose"],[class~="not-prose"] *)) { margin-top: 0.5em; margin-bottom: 0.5em; }
+.prose :where(ul, ol):not(:where([class~="not-prose"],[class~="not-prose"] *)) { margin-top: 0.5em; margin-bottom: 0.5em; }
+.prose :where(li):not(:where([class~="not-prose"],[class~="not-prose"] *)) { margin-top: 0.15em; margin-bottom: 0.15em; }
+.prose :where(pre):not(:where([class~="not-prose"],[class~="not-prose"] *)) { margin-top: 0.75em; margin-bottom: 0.75em; }
 .prose :where(blockquote):not(:where([class~="not-prose"],[class~="not-prose"] *)) {
   border-left-color: var(--color-border);
+  border-left-width: 2px;
   color: var(--color-text-muted);
   font-style: normal;
 }
-
-.prose :where(code):not(:where(pre *, [class~="not-prose"],[class~="not-prose"] *)) {
-  font-weight: 500;
-}
+.prose :where(code):not(:where(pre *, [class~="not-prose"],[class~="not-prose"] *)) { font-weight: 500; }
 
 /* ================================================================
-   highlight.js — theme-aware syntax highlighting (uses --syntax-* vars)
+   highlight.js — theme-aware
    ================================================================ */
-.hljs {
-  background: var(--color-bg-secondary) !important;
-  color: var(--color-text-primary) !important;
-}
-.hljs-comment,
-.hljs-quote {
-  color: var(--color-syntax-comment);
-  font-style: italic;
-}
-.hljs-keyword,
-.hljs-selector-tag {
-  color: var(--color-syntax-keyword);
-  font-weight: 600;
-}
-.hljs-type {
-  color: var(--color-syntax-type);
-  font-weight: 600;
-}
-.hljs-string,
-.hljs-attr,
-.hljs-addition {
-  color: var(--color-syntax-string);
-}
-.hljs-number,
-.hljs-literal,
-.hljs-variable,
-.hljs-template-variable {
-  color: var(--color-syntax-number);
-}
-.hljs-title,
-.hljs-section,
-.hljs-name {
-  color: var(--color-syntax-function);
-}
-.hljs-built_in,
-.hljs-builtin-name {
-  color: var(--color-syntax-builtin);
-}
-.hljs-function > .hljs-title {
-  color: var(--color-syntax-function);
-}
-.hljs-deletion {
-  color: var(--color-syntax-delete);
-}
-.hljs-meta {
-  color: var(--color-syntax-meta);
-}
-.hljs-emphasis {
-  font-style: italic;
-}
-.hljs-strong {
-  font-weight: 700;
-}
+.hljs { background: var(--color-bg-secondary) !important; color: var(--color-text-primary) !important; }
+.hljs-comment, .hljs-quote { color: var(--color-syntax-comment); font-style: italic; }
+.hljs-keyword, .hljs-selector-tag { color: var(--color-syntax-keyword); font-weight: 600; }
+.hljs-type { color: var(--color-syntax-type); font-weight: 600; }
+.hljs-string, .hljs-attr, .hljs-addition { color: var(--color-syntax-string); }
+.hljs-number, .hljs-literal, .hljs-variable, .hljs-template-variable { color: var(--color-syntax-number); }
+.hljs-title, .hljs-section, .hljs-name { color: var(--color-syntax-function); }
+.hljs-built_in, .hljs-builtin-name { color: var(--color-syntax-builtin); }
+.hljs-function > .hljs-title { color: var(--color-syntax-function); }
+.hljs-deletion { color: var(--color-syntax-delete); }
+.hljs-meta { color: var(--color-syntax-meta); }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 700; }
 
-/* CodeMirror — ensure full height and theme integration */
-.cm-editor {
-  height: 100%;
-}
-.cm-editor .cm-scroller {
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-  line-height: 1.7;
-}
+/* CodeMirror */
+.cm-editor { height: 100%; }
+.cm-editor .cm-scroller { font-family: 'Menlo', 'Consolas', 'Monaco', 'Courier New', monospace; line-height: 1.7; }
 
-/* Resize handle for panels */
-.resize-handle {
-  cursor: col-resize;
-  user-select: none;
-  touch-action: none;
-}
+/* 调整手柄 */
+.resize-handle { cursor: col-resize; user-select: none; touch-action: none; }
+.resize-handle-h { cursor: row-resize; user-select: none; touch-action: none; }
 
-/* Horizontal resize handle for vertical splits */
-.resize-handle-h {
-  cursor: row-resize;
-  user-select: none;
-  touch-action: none;
-}
-
-/* ================================================================
-   Tiptap editor — chat input styling
-   ================================================================ */
-
-/* Remove default paragraph margins inside the editor */
-.tiptap p {
-  margin: 0;
-  padding: 0;
-}
-
-/* Placeholder text (via @tiptap/extension-placeholder) */
+/* Tiptap 编辑器 */
+.tiptap p { margin: 0; padding: 0; }
 .tiptap p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
@@ -628,12 +259,4 @@ input, textarea, [contenteditable="true"],
   pointer-events: none;
   height: 0;
 }
-
-/* Auto-size: min/max height for the editor area */
-.tiptap {
-  min-height: 24px;
-  max-height: 50vh;
-  overflow-y: auto;
-  outline: none;
-  line-height: 1.5;
-}
+.tiptap { min-height: 24px; max-height: 50vh; overflow-y: auto; outline: none; line-height: 1.5; }

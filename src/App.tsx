@@ -24,36 +24,24 @@ import { useT } from './lib/i18n';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import './App.css';
 
-/** Accent colors per theme for the slash in the icon */
-const THEME_ACCENT_COLORS: Record<ColorTheme, string> = {
-  black: '#FFFFFF',
-  blue: '#4E80F7',
-  orange: '#C47252',
-  green: '#57A64B',
-};
+/** NOVA icon accent — ice blue */
+const ICON_ACCENT_COLOR = '#00a8e8';
 
-/** Render the app icon SVG as base64 PNG for macOS Dock.
- *  Stable: black bg, white brackets, accent-colored slash.
- *  Alpha: rainbow gradient bg, white brackets and slash. */
-function renderIconPng(accentColor: string): Promise<string> {
+/** Render the NOVA app icon SVG as base64 PNG for macOS Dock.
+ *  Diamond-N logo: dark bg (#080c14), rotated square (stroke #00a8e8) with N inside. */
+function renderIconPng(_accentColor?: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const size = 512;
-    const svg = IS_ALPHA
-      ? `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="-20.75 -20.75 212.5 212.5">
-<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-<stop offset="0%" stop-color="#7B2FF7"/><stop offset="35%" stop-color="#4E80F7"/>
-<stop offset="65%" stop-color="#38BDF8"/><stop offset="100%" stop-color="#34D399"/>
-</linearGradient></defs>
-<rect width="171" height="171" rx="38.5" fill="url(#bg)"/>
-<path d="M66.7913 58.7327L40.3284 85.1946L66.7913 111.657L57.5295 120.919L21.8049 85.1946L57.5295 49.471L66.7913 58.7327Z" fill="white"/>
-<path d="M111.497 49.471L147.222 85.1946L111.497 120.919L102.236 111.657L128.698 85.1946L102.236 58.7327L111.497 49.471Z" fill="white"/>
-<path d="M90.0113 39.9192L102.011 39.9192L79.2356 129.919L67.2356 129.919L79.2356 81.9192L90.0113 39.9192Z" fill="white"/>
-</svg>`
-      : `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="-20.75 -20.75 212.5 212.5">
-<rect width="171" height="171" rx="38.5" fill="#000000"/>
-<path d="M66.7913 58.7327L40.3284 85.1946L66.7913 111.657L57.5295 120.919L21.8049 85.1946L57.5295 49.471L66.7913 58.7327Z" fill="white"/>
-<path d="M111.497 49.471L147.222 85.1946L111.497 120.919L102.236 111.657L128.698 85.1946L102.236 58.7327L111.497 49.471Z" fill="white"/>
-<path d="M90.0113 39.9192L102.011 39.9192L79.2356 129.919L67.2356 129.919L79.2356 81.9192L90.0113 39.9192Z" fill="${accentColor}"/>
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 512 512">
+<rect width="512" height="512" fill="#080c14"/>
+<g transform="translate(256,256)">
+  <rect x="-100" y="-100" width="200" height="200" rx="0"
+    fill="none" stroke="#00a8e8" stroke-width="8"
+    transform="rotate(45)"/>
+  <text x="0" y="35" text-anchor="middle"
+    font-family="monospace" font-size="120" font-weight="700"
+    fill="#00a8e8">N</text>
+</g>
 </svg>`;
     const blob = new Blob([svg], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
@@ -76,10 +64,9 @@ function renderIconPng(accentColor: string): Promise<string> {
   });
 }
 
-async function updateDockIcon(colorTheme: ColorTheme, _theme: Theme) {
+async function updateDockIcon(_colorTheme?: ColorTheme, _theme?: Theme) {
   try {
-    const accentColor = THEME_ACCENT_COLORS[colorTheme];
-    const pngBase64 = await renderIconPng(accentColor);
+    const pngBase64 = await renderIconPng();
     await bridge.setDockIcon(pngBase64);
   } catch {
     // Silently ignore on non-macOS or errors
@@ -550,24 +537,10 @@ function App() {
     }
   }, [theme]);
 
-  // Apply color theme class to document
+  // Update macOS dock icon with NOVA branding
   useEffect(() => {
-    const root = document.documentElement;
-    root.classList.remove('theme-blue', 'theme-orange', 'theme-green');
-    if (colorTheme === 'blue') {
-      root.classList.add('theme-blue');
-    } else if (colorTheme === 'orange') {
-      root.classList.add('theme-orange');
-    } else if (colorTheme === 'green') {
-      root.classList.add('theme-green');
-    }
-    // 'black' is the default — no class needed
-  }, [colorTheme]);
-
-  // Update macOS dock icon when color theme changes
-  useEffect(() => {
-    updateDockIcon(colorTheme, theme);
-  }, [colorTheme, theme]);
+    updateDockIcon();
+  }, []);
 
   // Apply font size to document root
   useEffect(() => {
