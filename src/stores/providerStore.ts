@@ -63,10 +63,32 @@ export const useProviderStore = create<ProviderState>()((set, get) => ({
         if (migrated) {
           data.providers = [migrated];
           data.activeProviderId = migrated.id;
-          // Save migrated data
           await bridge.saveProviders(data);
           console.log('[providerStore] Migrated old API settings to provider:', migrated.name);
         }
+      }
+
+      // NOVA: If still empty, create default Zhipu GLM provider
+      if (data.providers.length === 0) {
+        const defaultProvider: ApiProvider = {
+          id: generateId(),
+          name: '智谱 GLM（免费版）',
+          baseUrl: 'https://open.bigmodel.cn/api/anthropic',
+          apiFormat: 'anthropic',
+          apiKey: '',
+          modelMappings: [
+            { tier: 'opus', providerModel: 'glm-5' },
+            { tier: 'sonnet', providerModel: 'glm-5-turbo' },
+            { tier: 'haiku', providerModel: 'glm-4.7' },
+          ],
+          preset: 'zhipu',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+        data.providers = [defaultProvider];
+        data.activeProviderId = defaultProvider.id;
+        await bridge.saveProviders(data);
+        console.log('[providerStore] Created default Zhipu GLM provider');
       }
 
       set({

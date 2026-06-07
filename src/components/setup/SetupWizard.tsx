@@ -4,6 +4,7 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { useT } from '../../lib/i18n';
 import { stripAnsi } from '../../lib/strip-ansi';
 import { AiAvatar } from '../shared/AiAvatar';
+import { ApiUpgradePrompt } from './ApiUpgradePrompt';
 import {
   bridge,
   onDownloadProgress,
@@ -53,6 +54,7 @@ export function SetupWizard() {
 
   const [downloadPercent, setDownloadPercent] = useState(0);
   const [downloadPhase, setDownloadPhase] = useState<string>('');
+  const [showApiPrompt, setShowApiPrompt] = useState(false);
 
   // Auto-detect CLI on mount — skip wizard entirely if found
   useEffect(() => {
@@ -64,6 +66,10 @@ export function SetupWizard() {
         if (status.installed && !status.git_bash_missing) {
           setCliInfo(status.version ?? null, status.path ?? null);
           setSetupCompleted(true);
+          // NOVA: 首次启动显示 API 引导
+          if (!localStorage.getItem('nova-api-prompt-shown')) {
+            setTimeout(() => setShowApiPrompt(true), 500);
+          }
           return;
         }
         // CLI installed but git-bash missing → treat as needing install
@@ -101,7 +107,14 @@ export function SetupWizard() {
       if (status.installed) {
         setCliInfo(status.version ?? null, status.path ?? null);
         setStep('installed');
-        setTimeout(() => setSetupCompleted(true), 1200);
+        setTimeout(() => {
+          setSetupCompleted(true);
+          // NOVA: 首次安装完成后弹出 DeepSeek 更换提示
+          const hasSeenPrompt = localStorage.getItem('nova-api-prompt-shown');
+          if (!hasSeenPrompt) {
+            setTimeout(() => setShowApiPrompt(true), 800);
+          }
+        }, 1200);
       } else {
         setError('CLI not found after download');
         setStep('install_failed');
@@ -273,6 +286,22 @@ export function SetupWizard() {
           </div>
         )}
       </div>
+
+      {/* NOVA: DeepSeek 更换引导弹窗 */}
+      {showApiPrompt && (
+        <ApiUpgradePrompt
+          onClose={() => {
+            localStorage.setItem('nova-api-prompt-shown', '1');
+            setShowApiPrompt(false);
+          }}
+          onUpgrade={() => {
+            localStorage.setItem('nova-api-prompt-shown', '1');
+            setShowApiPrompt(false);
+            // 打开设置面板让用户更换 API
+            useSettingsStore.getState().setSettingsOpen?.(true);
+          }}
+        />
+      )}
     </div>
   );
 }
