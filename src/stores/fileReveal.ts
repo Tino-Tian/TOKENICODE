@@ -97,3 +97,25 @@ export function findNodeByPath(tree: FileNode[], path: string): FileNode | null 
   }
   return null;
 }
+
+/**
+ * 容错：把前缀可能不准的绝对路径«对齐»回真实 rootPath 下。
+ *
+ * AI 在聊天里给的绝对全路径，前缀常和真实文件系统不一致——iCloud 的
+ * `com~apple~CloudDocs` 会被写成 `com-apple-CloudDocs`、甚至整段缺失。
+ * 这类路径直接拿去和文件树匹配会失败（点了不展开 / 不高亮）。
+ *
+ * 策略：若 target 不在 root 之下，就用 root 的最后一段（工作区名）当锚点，
+ * 在 target 里找到它、截取其后的相对部分，拼回真实 root。对不上则原样返回。
+ * 相对路径、已在 root 下的绝对路径都不受影响。
+ */
+export function reconcilePathToRoot(target: string, root: string): string {
+  const t = normalizePath(target);
+  const r = normalizePath(root);
+  if (!r || t === r || t.startsWith(r + '/')) return t;
+  const rootName = r.split('/').pop() || '';
+  if (!rootName) return t;
+  const anchor = t.indexOf(`/${rootName}/`);
+  if (anchor === -1) return t;
+  return `${r}/${t.slice(anchor + rootName.length + 2)}`;
+}

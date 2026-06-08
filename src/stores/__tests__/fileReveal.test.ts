@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyPathToken, computeRevealExpansions, findNodeByPath, normalizePath, resolvePathToken } from '../fileReveal';
+import { classifyPathToken, computeRevealExpansions, findNodeByPath, normalizePath, reconcilePathToRoot, resolvePathToken } from '../fileReveal';
 import type { FileNode } from '../../lib/tauri-bridge';
 
 describe('normalizePath', () => {
@@ -136,5 +136,31 @@ describe('resolvePathToken（相对路径拼成绝对路径）', () => {
   });
   it('base 带末尾斜杠也兼容', () => {
     expect(resolvePathToken('a.md', '/root/')).toBe('/root/a.md');
+  });
+});
+
+// AI 在聊天里给的全路径，iCloud 前缀段常写得和真实文件系统不一致
+// （com~apple~CloudDocs ↔ com-apple-CloudDocs / 整段缺失）→ 定位前先对齐回真实 root。
+describe('reconcilePathToRoot（前缀不准的绝对路径对齐回真实 root）', () => {
+  const root = '/Users/x/Library/Mobile Documents/com~apple~CloudDocs/2026工作间';
+
+  it('iCloud 段缺失的全路径 → 对齐回真实 root', () => {
+    expect(reconcilePathToRoot('/Users/x/Library/Mobile Documents/2026工作间/01_Her/6.7看板.html', root))
+      .toBe('/Users/x/Library/Mobile Documents/com~apple~CloudDocs/2026工作间/01_Her/6.7看板.html');
+  });
+  it('iCloud 段被写成连字符 → 对齐回真实 root', () => {
+    expect(reconcilePathToRoot('/Users/x/Library/Mobile Documents/com-apple-CloudDocs/2026工作间/01_Her/6.7看板.html', root))
+      .toBe('/Users/x/Library/Mobile Documents/com~apple~CloudDocs/2026工作间/01_Her/6.7看板.html');
+  });
+  it('已在真实 root 下 → 原样返回', () => {
+    const p = `${root}/01_Her/6.7看板.html`;
+    expect(reconcilePathToRoot(p, root)).toBe(p);
+  });
+  it('找不到工作区名锚点 → 原样返回', () => {
+    expect(reconcilePathToRoot('/totally/different/a.html', root)).toBe('/totally/different/a.html');
+  });
+  it('末尾斜杠先规范化', () => {
+    expect(reconcilePathToRoot('/Users/x/Library/Mobile Documents/2026工作间/01_Her/', root))
+      .toBe(`${root}/01_Her`);
   });
 });

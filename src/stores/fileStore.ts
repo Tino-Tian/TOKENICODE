@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { bridge, FileNode, RecentProject } from '../lib/tauri-bridge';
-import { computeRevealExpansions, findNodeByPath, normalizePath } from './fileReveal';
+import { computeRevealExpansions, findNodeByPath, reconcilePathToRoot } from './fileReveal';
 
 export type FileChangeKind = 'created' | 'modified' | 'removed';
 export type PreviewMode = 'preview' | 'source' | 'edit';
@@ -334,7 +334,9 @@ export const useFileStore = create<FileState>()((set, get) => ({
 
   revealPath: (path: string) => {
     const { tree, rootPath, expandedFolders } = get();
-    const target = normalizePath(path);
+    // 容错：AI 给的绝对全路径前缀可能和真实文件系统不一致（iCloud 的
+    // com~apple~CloudDocs 常被写成 com-apple-CloudDocs 或整段缺失）→ 按工作区名对齐回真实 rootPath。
+    const target = reconcilePathToRoot(path, rootPath);
     // 判断目标是文件还是文件夹：先在已加载的树里查，查不到回退到「末尾斜杠」
     const node = findNodeByPath(tree, target);
     const isDir = node ? node.is_dir : /\/$/.test(path);
