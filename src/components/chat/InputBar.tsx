@@ -94,7 +94,7 @@ function ThinkLevelSelector({ disabled = false }: { disabled?: boolean }) {
           border transition-smooth cursor-pointer
           ${isOff
             ? 'border-border-subtle bg-bg-secondary/50 text-text-muted hover:text-text-primary hover:bg-bg-secondary'
-            : 'border-amber-500/30 bg-amber-500/10 text-amber-500'
+            : 'border-accent/30 bg-accent/10 text-accent'
           }`}
       >
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none"
@@ -1472,7 +1472,7 @@ export function InputBar() {
   }, []);
 
   return (
-    <div className="p-4 relative">
+    <div className="px-4 pt-4 pb-2 relative">
       <div className="max-w-3xl mx-auto">
         {/* Rewind Panel — positioned above the input area */}
         {showRewindPanel && (
@@ -1633,7 +1633,7 @@ export function InputBar() {
         </div>
 
         {/* Tool row: upload, mode, model */}
-        <div className="flex items-center gap-2 mt-2 px-1">
+        <div className="flex items-center gap-2 mt-2">
           {/* Upload button */}
           <button
             onClick={() => fileInputRef.current?.click()}

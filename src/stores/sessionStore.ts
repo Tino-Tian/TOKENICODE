@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { bridge, SessionListItem, ContentSearchResult } from '../lib/tauri-bridge';
+import { useGroupStore } from './groupStore';
 
 // --- Orphan drain callback ---
 // useStreamProcessor exports drainOrphanBuffer(), but sessionStore can't import
@@ -233,6 +234,9 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
 
   promoteDraft: (oldDraftId, newRealId) => {
     saveLastSessionId(newRealId);
+    // Keep the group ledger in sync: a draft promoted to its real CLI id must
+    // stay in its task group (the ledger still referenced the old draft id).
+    useGroupStore.getState().replaceSessionId(oldDraftId, newRealId);
     set((state) => {
     // 1) Rename session in the list
     const sessions = state.sessions.map((s) =>

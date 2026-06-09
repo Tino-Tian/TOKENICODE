@@ -7699,6 +7699,27 @@ async fn save_archived_sessions(data: Value) -> Result<(), String> {
     std::fs::write(&path, content).map_err(|e| format!("Failed to write archived sessions: {}", e))
 }
 
+/// Load session groups (the grouping ledger) from disk.
+#[tauri::command]
+async fn load_session_groups() -> Result<Value, String> {
+    let path = tokenicode_data_path("groups.json")?;
+    if !path.exists() {
+        return Ok(serde_json::json!([]));
+    }
+    let content = std::fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read session groups: {}", e))?;
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse session groups: {}", e))
+}
+
+/// Save session groups (the grouping ledger) to disk.
+#[tauri::command]
+async fn save_session_groups(data: Value) -> Result<(), String> {
+    let path = tokenicode_data_path("groups.json")?;
+    let content = serde_json::to_string_pretty(&data)
+        .map_err(|e| format!("Failed to serialize session groups: {}", e))?;
+    std::fs::write(&path, content).map_err(|e| format!("Failed to write session groups: {}", e))
+}
+
 /// Max wall-clock time the title-gen spawn may run. Beyond this we return
 /// `Ok(None)` — the frontend shows a default title and the user can rename
 /// later. Chosen for two reasons:
@@ -8131,6 +8152,8 @@ pub fn run() {
             save_pinned_sessions,
             load_archived_sessions,
             save_archived_sessions,
+            load_session_groups,
+            save_session_groups,
             generate_session_title,
             load_providers,
             save_providers,

@@ -90,9 +90,6 @@ const messages: Record<Locale, Record<string, string>> = {
     'conv.deleteAllConfirmDetail': '此操作不可撤销。',
     'conv.pin': '置顶',
     'conv.unpin': '取消置顶',
-    'conv.archive': '归档',
-    'conv.unarchive': '取消归档',
-    'conv.showArchived': '显示归档',
     'conv.selectMode': '选择',
     'conv.selected': '已选 {n} 个',
     'conv.contentMatches': '内容匹配',
@@ -117,7 +114,6 @@ const messages: Record<Locale, Record<string, string>> = {
     // FileExplorer
     'files.title': '文件',
     'files.selectProject': '从下方输入栏选择一个项目以浏览文件',
-    'files.changed': '已更改',
     'files.clearMarkers': '清除标记',
     'files.closePreview': '关闭预览',
     'files.refresh': '刷新',
@@ -161,7 +157,6 @@ const messages: Record<Locale, Record<string, string>> = {
     'files.delete': '删除',
     'files.deleteConfirm': '确定要将 "{name}" 移到回收站吗？',
     'files.deleteConfirmDir': '确定要将文件夹 "{name}" 及其所有内容移到回收站吗？',
-    'files.toggleHidden': '显示/隐藏隐藏文件',
 
     // ProjectSelector
     'project.selectFolder': '选择项目文件夹',
@@ -343,7 +338,7 @@ const messages: Record<Locale, Record<string, string>> = {
     'settings.userNamePlaceholder': '输入昵称',
     'settings.colorTheme': '主题颜色',
     'settings.black': '黑色',
-    'settings.orange': '橘色',
+    'settings.purple': '紫色',
     'settings.green': '绿色',
     'settings.blue': '蓝色',
     'settings.appearance': '外观',
@@ -823,9 +818,6 @@ const messages: Record<Locale, Record<string, string>> = {
     'conv.deleteAllConfirmDetail': 'This action cannot be undone.',
     'conv.pin': 'Pin',
     'conv.unpin': 'Unpin',
-    'conv.archive': 'Archive',
-    'conv.unarchive': 'Unarchive',
-    'conv.showArchived': 'Show Archived',
     'conv.selectMode': 'Select',
     'conv.selected': '{n} selected',
     'conv.contentMatches': 'Content matches',
@@ -850,7 +842,6 @@ const messages: Record<Locale, Record<string, string>> = {
     // FileExplorer
     'files.title': 'Files',
     'files.selectProject': 'Select a project from the input bar below to browse files',
-    'files.changed': 'changed',
     'files.clearMarkers': 'Clear markers',
     'files.closePreview': 'Close preview',
     'files.refresh': 'Refresh',
@@ -894,7 +885,6 @@ const messages: Record<Locale, Record<string, string>> = {
     'files.delete': 'Delete',
     'files.deleteConfirm': 'Move "{name}" to trash?',
     'files.deleteConfirmDir': 'Move folder "{name}" and all its contents to trash?',
-    'files.toggleHidden': 'Show/Hide hidden files',
 
     // ProjectSelector
     'project.selectFolder': 'Select Project Folder',
@@ -1076,7 +1066,7 @@ const messages: Record<Locale, Record<string, string>> = {
     'settings.userNamePlaceholder': 'Enter display name',
     'settings.colorTheme': 'Color Theme',
     'settings.black': 'Black',
-    'settings.orange': 'Orange',
+    'settings.purple': 'Purple',
     'settings.green': 'Green',
     'settings.blue': 'Blue',
     'settings.appearance': 'Appearance',

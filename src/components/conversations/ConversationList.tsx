@@ -11,7 +11,9 @@ import { useT } from '../../lib/i18n';
 import { parseSessionMessages } from '../../lib/session-loader';
 import { SessionGroup } from './SessionGroup';
 import { SessionItem } from './SessionItem';
-import { SessionContextMenu, ProjectContextMenu } from './SessionContextMenu';
+import { SessionContextMenu, ProjectContextMenu, GroupContextMenu } from './SessionContextMenu';
+import { useGroupStore } from '../../stores/groupStore';
+import { initGroupPersistence } from '../../stores/groupPersistence';
 import { ConfirmDialog } from '../shared/ConfirmDialog';
 import { teardownSession, waitForStdinCleared } from '../../lib/sessionLifecycle';
 
@@ -112,6 +114,12 @@ export function ConversationList() {
   const [projectMenu, setProjectMenu] = useState<ProjectMenuState | null>(null);
   const [renamingSessionId, setRenamingSessionId] = useState<string | null>(null);
 
+  // Session groups (the grouping ledger lives in groupStore)
+  const groups = useGroupStore((s) => s.groups);
+  const [groupMenu, setGroupMenu] = useState<{ x: number; y: number; groupId: string } | null>(null);
+  const [renamingGroupId, setRenamingGroupId] = useState<string | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<SessionListItem | null>(null);
   const [deleteAllTarget, setDeleteAllTarget] = useState<{
@@ -139,7 +147,6 @@ export function ConversationList() {
       return new Set(data ? JSON.parse(data) : []);
     } catch { return new Set(); }
   });
-  const [showArchived, setShowArchived] = useState(false);
 
   // Multi-select
   const [multiSelect, setMultiSelect] = useState(false);
@@ -165,12 +172,6 @@ export function ConversationList() {
     bridge.savePinnedSessions([...next]).catch(() => {});
   }, []);
 
-  const persistArchived = useCallback((next: Set<string>) => {
-    setArchivedSessions(next);
-    localStorage.setItem('tokenicode_archived_sessions', JSON.stringify([...next]));
-    bridge.saveArchivedSessions([...next]).catch(() => {});
-  }, []);
-
   // Load pinned/archived from backend on init
   useEffect(() => {
     bridge.loadPinnedSessions?.()
@@ -183,6 +184,11 @@ export function ConversationList() {
         if (data?.length) setArchivedSessions(new Set(data));
       })
       .catch(() => {});
+  }, []);
+
+  // Load session groups from disk + keep disk in sync on every change
+  useEffect(() => {
+    initGroupPersistence();
   }, []);
 
   // Initial fetch + polling
@@ -234,12 +240,8 @@ export function ConversationList() {
   const filtered = useMemo(() => {
     let result = sessions;
 
-    // Archive filter: OFF = hide archived, ON = show ONLY archived
-    if (showArchived) {
-      result = result.filter((s) => archivedSessions.has(s.id));
-    } else {
-      result = result.filter((s) => !archivedSessions.has(s.id));
-    }
+    // Always hide archived sessions
+    result = result.filter((s) => !archivedSessions.has(s.id));
 
     // Search
     if (searchQuery.trim()) {
@@ -253,7 +255,7 @@ export function ConversationList() {
     }
 
     return result;
-  }, [sessions, searchQuery, displayName, showArchived, archivedSessions]);
+  }, [sessions, searchQuery, displayName, archivedSessions]);
 
   // Group by project
   const projectGroups = useMemo(() => {
@@ -283,11 +285,10 @@ export function ConversationList() {
     return sessions.filter((s) => {
       if (metadataIds.has(s.id)) return false;
       if (!contentSearchResults.has(s.id)) return false;
-      // Respect archive filter
-      if (showArchived) return archivedSessions.has(s.id);
+      // Always hide archived sessions
       return !archivedSessions.has(s.id);
     });
-  }, [sessions, filtered, contentSearchResults, searchQuery, showArchived, archivedSessions]);
+  }, [sessions, filtered, contentSearchResults, searchQuery, archivedSessions]);
 
   // Smart expand: expand if contains selected, or manually expanded
   const isExpanded = useCallback((key: string) => {
@@ -523,7 +524,24 @@ export function ConversationList() {
     useChatStore.getState().ensureTab(newDraftId);
     useChatStore.getState().resetTab(newDraftId);
     useSessionStore.getState().addDraftSession(newDraftId, realPath);
+    return newDraftId;
   }, []);
+
+  // New session that lands straight into a task group: create it in the group's
+  // workspace, then write the draft id into the group ledger.
+  const handleNewSessionInGroup = useCallback((groupId: string) => {
+    const group = useGroupStore.getState().groups.find((g) => g.id === groupId);
+    if (!group) return;
+    const draftId = handleNewSessionInProject(group.workspace);
+    useGroupStore.getState().addToGroup(draftId, groupId);
+  }, [handleNewSessionInProject]);
+
+  const handleReorderGroups = useCallback(
+    (workspace: string, orderedGroupIds: string[]) => {
+      useGroupStore.getState().reorderGroups(workspace, orderedGroupIds);
+    },
+    [],
+  );
 
   // Pin / Archive handlers
   const handleTogglePin = useCallback((session: SessionListItem) => {
@@ -533,12 +551,52 @@ export function ConversationList() {
     persistPinned(next);
   }, [pinnedSessions, persistPinned]);
 
-  const handleToggleArchive = useCallback((session: SessionListItem) => {
-    const next = new Set(archivedSessions);
-    if (next.has(session.id)) next.delete(session.id);
-    else next.add(session.id);
-    persistArchived(next);
-  }, [archivedSessions, persistArchived]);
+  // --- Session group handlers ---
+  // Create an empty group in a workspace (workspace header → "create group").
+  const handleCreateGroup = useCallback((projectKey: string) => {
+    const id = useGroupStore.getState().createGroup(projectKey, '新任务组');
+    setRenamingGroupId(id); // jump straight into inline rename
+  }, []);
+
+  // Create a group and drop this session into it (session → "create group").
+  const handleCreateGroupWithSession = useCallback((session: SessionListItem) => {
+    const ws = normalizeProjectKey(session.project || session.projectDir);
+    const id = useGroupStore.getState().createGroup(ws, '新任务组');
+    useGroupStore.getState().addToGroup(session.id, id);
+    setRenamingGroupId(id);
+  }, []);
+
+  const handleAddToGroup = useCallback((session: SessionListItem, groupId: string) => {
+    useGroupStore.getState().addToGroup(session.id, groupId);
+  }, []);
+
+  const handleRemoveFromGroup = useCallback((session: SessionListItem) => {
+    useGroupStore.getState().removeFromGroup(session.id);
+  }, []);
+
+  const handleGroupContextMenu = useCallback((e: React.MouseEvent, groupId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setGroupMenu({ x: e.clientX, y: e.clientY, groupId });
+  }, []);
+
+  const handleRenameGroupCommit = useCallback((groupId: string, label: string) => {
+    useGroupStore.getState().renameGroup(groupId, label);
+    setRenamingGroupId(null);
+  }, []);
+
+  const handleDeleteGroup = useCallback((groupId: string) => {
+    useGroupStore.getState().deleteGroup(groupId);
+  }, []);
+
+  const handleToggleGroupCollapse = useCallback((groupId: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
+  }, []);
 
   // Build flat list of visible session IDs for shift+click range selection
   const flatSessionIds = useMemo(() => {
@@ -602,14 +660,6 @@ export function ConversationList() {
     fetchSessions();
   }, [selectedIds, executeDelete, fetchSessions]);
 
-  const handleBatchArchive = useCallback(() => {
-    const next = new Set(archivedSessions);
-    for (const id of selectedIds) next.add(id);
-    persistArchived(next);
-    setSelectedIds(new Set());
-    setMultiSelect(false);
-  }, [selectedIds, archivedSessions, persistArchived]);
-
   const handleRename = useCallback((sessionId: string, newName: string) => {
     setCustomPreview(sessionId, newName);
   }, [setCustomPreview]);
@@ -658,24 +708,6 @@ export function ConversationList() {
               </button>
             )}
           </div>
-
-          {/* Archive toggle */}
-          <button
-            onClick={() => setShowArchived(!showArchived)}
-            className={`flex-shrink-0 p-2 rounded-lg transition-smooth
-              ${showArchived
-                ? 'bg-accent/10 text-accent'
-                : 'text-text-tertiary hover:bg-bg-secondary hover:text-text-primary'
-              }`}
-            title={t('conv.showArchived')}
-          >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
-              stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="1" y="2" width="14" height="3" rx="1" />
-              <path d="M2 5v7a1 1 0 001 1h10a1 1 0 001-1V5" />
-              <path d="M6 8h4" />
-            </svg>
-          </button>
         </div>
       </div>
 
@@ -715,6 +747,15 @@ export function ConversationList() {
           onToggleCheck={handleToggleCheck}
           renamingSessionId={renamingSessionId}
           onRenameDone={() => setRenamingSessionId(null)}
+          workspaceGroups={groups.filter((g) => g.workspace === project)}
+          collapsedGroups={collapsedGroups}
+          onToggleGroupCollapse={handleToggleGroupCollapse}
+          onGroupContextMenu={handleGroupContextMenu}
+          renamingGroupId={renamingGroupId}
+          onRenameGroupCommit={handleRenameGroupCommit}
+          onRenameGroupCancel={() => setRenamingGroupId(null)}
+          onReorderGroups={handleReorderGroups}
+          onNewSessionInGroup={handleNewSessionInGroup}
         />
         );
       })}
@@ -794,15 +835,6 @@ export function ConversationList() {
             {t('conv.selected').replace('{n}', String(selectedIds.size))}
           </span>
           <button
-            onClick={handleBatchArchive}
-            disabled={selectedIds.size === 0}
-            className="px-2 py-1 text-xs rounded-lg bg-bg-tertiary text-text-primary
-              hover:bg-accent/10 hover:text-accent transition-smooth
-              disabled:opacity-30"
-          >
-            {t('conv.archive')}
-          </button>
-          <button
             onClick={handleBatchDelete}
             disabled={selectedIds.size === 0}
             className="px-2 py-1 text-xs rounded-lg bg-error/10 text-error
@@ -822,7 +854,11 @@ export function ConversationList() {
       )}
 
       {/* Session context menu */}
-      {contextMenu && (
+      {contextMenu && (() => {
+        const ws = normalizeProjectKey(contextMenu.session.project || contextMenu.session.projectDir);
+        const wsGroups = groups.filter((g) => g.workspace === ws);
+        const currentGroup = wsGroups.find((g) => g.sessionIds.includes(contextMenu.session.id));
+        return (
         <SessionContextMenu
           x={contextMenu.x}
           y={contextMenu.y}
@@ -832,12 +868,18 @@ export function ConversationList() {
           onExport={handleExportMarkdown}
           onDelete={handleDeleteSingle}
           onPin={handleTogglePin}
-          onArchive={handleToggleArchive}
           isPinned={pinnedSessions.has(contextMenu.session.id)}
-          isArchived={archivedSessions.has(contextMenu.session.id)}
+          onCreateGroupWithSession={handleCreateGroupWithSession}
+          availableGroups={wsGroups
+            .filter((g) => g.id !== currentGroup?.id)
+            .map((g) => ({ id: g.id, label: g.label }))}
+          onAddToGroup={handleAddToGroup}
+          currentGroupId={currentGroup?.id ?? null}
+          onRemoveFromGroup={handleRemoveFromGroup}
           onClose={() => setContextMenu(null)}
         />
-      )}
+        );
+      })()}
 
       {/* Project context menu */}
       {projectMenu && (
@@ -846,9 +888,22 @@ export function ConversationList() {
           y={projectMenu.y}
           project={projectMenu.project}
           onNewSession={handleNewSessionInProject}
+          onCreateGroup={handleCreateGroup}
           onDeleteAll={handleDeleteAllInProject}
           onSelectMode={handleSelectMode}
           onClose={() => setProjectMenu(null)}
+        />
+      )}
+
+      {/* Group context menu */}
+      {groupMenu && (
+        <GroupContextMenu
+          x={groupMenu.x}
+          y={groupMenu.y}
+          groupId={groupMenu.groupId}
+          onRename={(id) => setRenamingGroupId(id)}
+          onDelete={handleDeleteGroup}
+          onClose={() => setGroupMenu(null)}
         />
       )}
 

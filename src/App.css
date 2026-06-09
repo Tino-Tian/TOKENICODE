@@ -79,7 +79,7 @@
   --color-bg-assistant-msg: #1A1A1C;
   --color-bg-tool: #1E1E20;
   --color-bg-thinking: #1A1A1C;
-  --color-bg-card: #1C1C1E;
+  --color-bg-card: #262628;
 
   --color-text-primary: #F0F0F0;
   --color-text-secondary: #B0B0B0;
@@ -177,54 +177,53 @@
 /* ================================================================
    Orange theme — light mode
    ================================================================ */
-.theme-orange {
-  --color-bg-user-msg: #C47252;
-  --color-bg-nav-active: rgba(196, 114, 82, 0.06);
+.theme-purple {
+  --color-bg-user-msg: #9169BF;
+  --color-bg-nav-active: rgba(145, 105, 191, 0.06);
 
-  --color-text-secondary: #C47252;
-  --color-border-focus: #C47252;
+  --color-text-secondary: #9169BF;
+  --color-border-focus: #9169BF;
 
-  --color-accent: #C47252;
-  --color-accent-light: #D4856A;
-  --color-accent-hover: #B06141;
-  --color-accent-glow: rgba(196, 114, 82, 0.10);
-  --color-warning: #E8A86D;
+  --color-accent: #9169BF;
+  --color-accent-light: #A684CC;
+  --color-accent-hover: #7A5AA3;
+  --color-accent-glow: rgba(145, 105, 191, 0.10);
 
-  --color-gradient-start: #C47252;
-  --color-gradient-mid: #CC7E5E;
-  --color-gradient-end: #D4856A;
+  --color-gradient-start: #9169BF;
+  --color-gradient-mid: #9B77C6;
+  --color-gradient-end: #A684CC;
 
-  /* Syntax — orange accent: swap number to avoid amber-on-orange */
-  --color-syntax-number:   #2563EB;
+  /* Syntax — purple accent: swap keyword off purple to avoid purple-on-purple */
+  --color-syntax-keyword:  #2563EB;
   --color-syntax-function: #0891B2;
 
-  --shadow-glow: 0 0 20px rgba(196, 114, 82, 0.10);
+  --shadow-glow: 0 0 20px rgba(145, 105, 191, 0.10);
 
   --color-icon-slash: var(--color-accent);
 }
 
 /* Orange — dark mode */
-.theme-orange.dark,
-.dark.theme-orange {
-  --color-bg-user-msg: #D4856A;
+.theme-purple.dark,
+.dark.theme-purple {
+  --color-bg-user-msg: #A684CC;
 
-  --color-text-secondary: #D4856A;
-  --color-border-focus: #D4856A;
+  --color-text-secondary: #A684CC;
+  --color-border-focus: #A684CC;
 
-  --color-accent: #D4856A;
-  --color-accent-light: #E09882;
-  --color-accent-hover: #C47252;
-  --color-accent-glow: rgba(212, 133, 106, 0.15);
+  --color-accent: #A684CC;
+  --color-accent-light: #C0A0DC;
+  --color-accent-hover: #9169BF;
+  --color-accent-glow: rgba(166, 132, 204, 0.15);
 
-  --color-gradient-start: #C47252;
-  --color-gradient-mid: #CC7E5E;
-  --color-gradient-end: #D4856A;
+  --color-gradient-start: #9169BF;
+  --color-gradient-mid: #9B77C6;
+  --color-gradient-end: #A684CC;
 
-  /* Syntax — orange dark */
-  --color-syntax-number:   #60A5FA;
+  /* Syntax — purple dark */
+  --color-syntax-keyword:  #60A5FA;
   --color-syntax-function: #22D3EE;
 
-  --shadow-glow: 0 0 20px rgba(212, 133, 106, 0.10);
+  --shadow-glow: 0 0 20px rgba(166, 132, 204, 0.10);
 
   --color-icon-slash: var(--color-accent);
 }
@@ -364,36 +363,23 @@ input, textarea, [contenteditable="true"],
   -webkit-user-select: text;
 }
 
-/* Scrollbar styling — auto-hide, thin, neutral color.
-   Uses CSS-only opacity transition on the scrollbar: invisible by default,
-   fades in on hover over the scrollable container. Works on both macOS and
-   Windows without depending on system scrollbar settings. */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 0; /* Hide horizontal scrollbar globally */
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: transparent;
-  border-radius: 3px;
-  transition: background 0.3s ease;
-}
-/* Show scrollbar thumb on container hover */
-*:hover > ::-webkit-scrollbar-thumb,
-*:hover::-webkit-scrollbar-thumb {
-  background: rgba(128, 128, 128, 0.25);
-}
-*:hover > ::-webkit-scrollbar-thumb:hover,
-*:hover::-webkit-scrollbar-thumb:hover {
-  background: rgba(128, 128, 128, 0.45);
-}
+/* Scrollbar — use macOS-native overlay scrollbars (System Settings → 外观/General
+   → "Show scrollbars: When scrolling"). They float over content and reserve NO
+   layout space, so they never recreate the sidebar gap, yet stay visible while
+   scrolling in the chat / file-preview areas. We deliberately do NOT customize
+   ::-webkit-scrollbar globally — any width rule forces classic, space-reserving
+   scrollbars. The sidebar opts out entirely via .no-scrollbar below. */
 
-/* Firefox: thin scrollbar, auto-hide not supported natively — use neutral color */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(128, 128, 128, 0.2) transparent;
+/* Fully hide scrollbar — no track, no reserved gutter. Used by the conversation
+   list so card margins aren't offset by the 6px scrollbar. Still scrollable. */
+.no-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 /* Accent text (formerly gradient-text) */
