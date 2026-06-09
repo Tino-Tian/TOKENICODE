@@ -765,6 +765,9 @@ export const useChatStore = create<ChatState>()((set, get) => ({
           if (entry.inputDraft.trim().length > 0) return false;
           if (entry.pendingAttachments.length > 0) return false;
           if (entry.pendingUserMessages.length > 0) return false;
+          // Undelivered stream content not yet finalized into messages —
+          // evicting here would silently drop it (#86).
+          if (entry.partialText || entry.partialThinking) return false;
           return true;
         })
         .sort(([, a], [, b]) => a.lastAccessedAt - b.lastAccessedAt); // oldest first
