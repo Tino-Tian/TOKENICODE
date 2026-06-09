@@ -35,6 +35,10 @@ const ERROR_CATEGORIES: ReadonlyArray<{ pattern: RegExp; i18nKey: string }> = [
   { pattern: /40[13]|unauthorized|invalid.*key|api.key.*invalid/i, i18nKey: 'error.invalidKey' },
   { pattern: /429|rate.limit|too.many.request/i, i18nKey: 'error.rateLimit' },
   { pattern: /quota|insufficient.*balance|credit|billing/i, i18nKey: 'error.quotaExceeded' },
+  // Fable rejected as unknown means the installed CLI predates the model —
+  // the fix is a CLI upgrade, not switching models. Must match before the
+  // generic modelNotFound rule below.
+  { pattern: /(?=[\s\S]*fable)(?=[\s\S]*(not.?found|does.?not.?exist|invalid|unknown|unsupported))/i, i18nKey: 'error.modelNeedsNewerCli' },
   { pattern: /model.*not.found|invalid.*model|not_found.*model/i, i18nKey: 'error.modelNotFound' },
   { pattern: /timeout|timed?.out|ECONNREFUSED|ECONNRESET|ENOTFOUND/i, i18nKey: 'error.networkError' },
   { pattern: /network|fetch.failed|dns/i, i18nKey: 'error.networkError' },
