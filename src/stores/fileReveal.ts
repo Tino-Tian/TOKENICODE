@@ -12,10 +12,15 @@ export const KNOWN_FILE_EXTENSIONS = new Set([
   'gif', 'svg', 'webp', 'ico', 'wasm', 'map', 'pdf', 'doc', 'docx',
 ]);
 
+/** 明确的路径前缀：绝对/相对/盘符/隐藏目录（.claude/ .github/）/常见项目目录。
+ *  命中前缀即视为路径，扩展名可选（来自 #110 的前缀检测）。 */
+const PATH_PREFIX_RE = /^(?:\/|\.\/|\.\.\/|[a-zA-Z]:[/\\]|\.[a-zA-Z][\w.-]*\/|src\/|lib\/|components\/|stores\/|hooks\/|utils\/|tests\/|__tests__\/)/;
+
 /**
  * 判断一段反引号内的文本是不是路径，是文件还是文件夹。
  *
  * 规则放宽以支持中文路径（旧规则只认英文前缀路径，中文一律漏掉）：
+ * - 无空格 + 明确路径前缀 → 'file' / 'folder'（扩展名可选，如 src/build、./scripts/deploy）
  * - 无空格 + 末尾是已知扩展名 → 'file'（含中文路径 / 相对路径 / 裸文件名）
  * - 无空格 + 以 / 结尾 → 'folder'
  * - 其余（含空格的全路径、普通行内代码如 useState / Math.PI）→ null
@@ -25,6 +30,9 @@ export const KNOWN_FILE_EXTENSIONS = new Set([
 export function classifyPathToken(text: string): 'file' | 'folder' | null {
   const trimmed = text.trim();
   if (trimmed.length <= 1 || /\s/.test(trimmed)) return null;
+  if (PATH_PREFIX_RE.test(trimmed)) {
+    return trimmed.endsWith('/') ? 'folder' : 'file';
+  }
   const ext = trimmed.split('.').pop()?.toLowerCase() ?? '';
   if (KNOWN_FILE_EXTENSIONS.has(ext)) return 'file';
   if (trimmed.endsWith('/')) return 'folder';

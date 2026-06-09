@@ -121,6 +121,25 @@ describe('classifyPathToken（判断反引号内是不是路径）', () => {
   it('单字符 → null', () => {
     expect(classifyPathToken('a')).toBe(null);
   });
+  // 前缀检测（#110）：有明确路径前缀时，扩展名可选
+  it('项目目录前缀 + 无扩展名 → file', () => {
+    expect(classifyPathToken('src/build')).toBe('file');
+  });
+  it('相对前缀 ./ + 无扩展名 → file', () => {
+    expect(classifyPathToken('./scripts/deploy')).toBe('file');
+  });
+  it('隐藏目录前缀 .claude/ → file', () => {
+    expect(classifyPathToken('.claude/settings.local')).toBe('file');
+  });
+  it('隐藏目录自身（末尾斜杠）→ folder', () => {
+    expect(classifyPathToken('.github/')).toBe('folder');
+  });
+  it('盘符前缀 + 无扩展名 → file', () => {
+    expect(classifyPathToken('C:\\Users\\x\\bin')).toBe('file');
+  });
+  it('绝对路径 + 无扩展名 → file', () => {
+    expect(classifyPathToken('/usr/local/bin/claude')).toBe('file');
+  });
 });
 
 describe('resolvePathToken（相对路径拼成绝对路径）', () => {

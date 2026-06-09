@@ -219,7 +219,7 @@ function extractText(node: ReactNode): string {
  * Matches absolute paths (/..., C:\...), relative (./..., ../...), and
  * common project-relative paths (src/..., lib/..., etc.).
  */
-const BARE_PATH_RE = /(^|[^`\w:@#/])((?:(?:\/|\.\.?\/)[\w.@/+-]+\.\w{1,10}|(?:src|lib|components|stores|hooks|utils|tests|__tests__|app|pages|public|assets|styles|config)\/[\w.@/+-]+\.\w{1,10}))(?![`\w])/g;
+const BARE_PATH_RE = /(^|[^`\w:@#/])((?:(?:\/|\.\.?\/)[\w.@/+-]+\.\w{1,10}|(?:\.[a-zA-Z][\w.-]*|src|lib|components|stores|hooks|utils|tests|__tests__|app|pages|public|assets|styles|config)\/[\w.@/+-]+(?:\.\w{1,10})?))(?![`\w])/g;
 
 function wrapBareFilePaths(content: string): string {
   // Split by fenced code blocks (``` ... ```) — don't touch code blocks
@@ -238,9 +238,11 @@ function wrapBareFilePaths(content: string): string {
         // Don't wrap if preceded by ]( (markdown link)
         const before = str.slice(Math.max(0, pathStart - 2), pathStart);
         if (before.endsWith('](')) return match;
-        // TK-323: Only wrap if extension is a known code/config file type
+        // TK-323: Only wrap if extension is a known file type, OR path starts
+        // with a hidden dir (.claude/, .github/) where extension is optional
         const ext = path.split('.').pop()?.toLowerCase();
-        if (!ext || !KNOWN_FILE_EXTENSIONS.has(ext)) return match;
+        const isHiddenDirPath = /^\.[a-zA-Z][\w.-]*\//.test(path);
+        if (!isHiddenDirPath && (!ext || !KNOWN_FILE_EXTENSIONS.has(ext))) return match;
         return `${prefix}\`${path}\``;
       });
     }).join('');
