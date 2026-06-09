@@ -6,6 +6,9 @@ import { MODEL_OPTIONS, useSettingsStore, type ModelId } from '../stores/setting
  * Defined once here and imported by ModelSelector, GeneralTab, etc.
  */
 export const TIER_MAP: Record<string, 'opus' | 'sonnet' | 'haiku'> = {
+  'claude-fable-5': 'opus',
+  'claude-fable-5-1m': 'opus',
+  'claude-fable-5[1m]': 'opus',
   'claude-opus-4-8': 'opus',
   'claude-opus-4-8-1m': 'opus',
   'claude-opus-4-8[1m]': 'opus',
@@ -187,6 +190,7 @@ export function resolveModelOrError(selectedModel: string): ModelResolution {
  * the larger context window.
  */
 const CLI_MODEL_MAP: Partial<Record<ModelId, string>> = {
+  'claude-fable-5-1m': 'claude-fable-5[1m]',
   'claude-opus-4-8-1m': 'claude-opus-4-8[1m]',
   'claude-opus-4-6-1m': 'claude-opus-4-6[1m]',
 };

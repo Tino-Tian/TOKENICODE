@@ -8,6 +8,8 @@ export type Theme = 'light' | 'dark' | 'system';
 export type ColorTheme = 'black' | 'blue' | 'orange' | 'green';
 export type SecondaryPanelTab = 'files' | 'skills';
 export type ModelId =
+  | 'claude-fable-5'
+  | 'claude-fable-5-1m'
   | 'claude-opus-4-8'
   | 'claude-opus-4-8-1m'
   | 'claude-opus-4-6'
@@ -36,6 +38,8 @@ export type ThinkingLevel = 'off' | 'low' | 'medium' | 'high' | 'max';
 // variant so users can pick the larger context window explicitly. The 1M id is
 // translated to the CLI's `[1m]` model name in api-provider.ts (CLI_MODEL_MAP).
 export const MODEL_OPTIONS: { id: ModelId; label: string; short: string }[] = [
+  { id: 'claude-fable-5', label: 'Fable 5', short: 'Fable 5' },
+  { id: 'claude-fable-5-1m', label: 'Fable 5 (1M)', short: 'Fable 5 (1M)' },
   { id: 'claude-opus-4-8', label: 'Opus 4.8', short: 'Opus 4.8' },
   { id: 'claude-opus-4-8-1m', label: 'Opus 4.8 (1M)', short: 'Opus 4.8 (1M)' },
   { id: 'claude-opus-4-6', label: 'Opus 4.6', short: 'Opus 4.6' },
