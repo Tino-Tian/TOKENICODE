@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "dev:7": "EDITION=seven tauri dev --config editions/seven/tauri.seven.conf.json --config editions/seven/tauri.seven-dev.conf.json",
+    "build:7": "bash scripts/build-seven-local.sh"
   },
   "dependencies": {
     "@codemirror/lang-cpp": "^6.0.3",
