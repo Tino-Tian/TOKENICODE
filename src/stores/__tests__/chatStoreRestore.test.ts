@@ -169,6 +169,60 @@ describe('chatStore · B11 — stale-running demotion on restoreFromCache', () =
     expect(useChatStore.getState().getTab('old-1')).toBeUndefined();
   });
 
+  it('idle tab with undelivered partialText is protected from LRU eviction', () => {
+    const store = useChatStore.getState();
+    const ids = ['partial-keep', 'old-1', 'old-2', 'old-3', 'old-4', 'old-5', 'old-6', 'old-7'];
+    for (const id of ids) {
+      store.ensureTab(id);
+      store.addMessage(id, msg(`m-${id}`));
+    }
+    useChatStore.setState((state) => {
+      const tabs = new Map(state.tabs);
+      ids.forEach((id, idx) => {
+        const tab = tabs.get(id);
+        if (!tab) return;
+        tabs.set(id, {
+          ...tab,
+          lastAccessedAt: idx + 1,
+          ...(id === 'partial-keep' ? { partialText: 'streamed but not finalized' } : {}),
+        });
+      });
+      return { tabs, sessionCache: tabs };
+    });
+
+    store.ensureTab('incoming');
+
+    expect(useChatStore.getState().getTab('partial-keep')).toBeDefined();
+    expect(useChatStore.getState().getTab('old-1')).toBeUndefined();
+  });
+
+  it('idle tab with undelivered partialThinking is protected from LRU eviction', () => {
+    const store = useChatStore.getState();
+    const ids = ['thinking-keep', 'old-1', 'old-2', 'old-3', 'old-4', 'old-5', 'old-6', 'old-7'];
+    for (const id of ids) {
+      store.ensureTab(id);
+      store.addMessage(id, msg(`m-${id}`));
+    }
+    useChatStore.setState((state) => {
+      const tabs = new Map(state.tabs);
+      ids.forEach((id, idx) => {
+        const tab = tabs.get(id);
+        if (!tab) return;
+        tabs.set(id, {
+          ...tab,
+          lastAccessedAt: idx + 1,
+          ...(id === 'thinking-keep' ? { partialThinking: 'reasoning in flight' } : {}),
+        });
+      });
+      return { tabs, sessionCache: tabs };
+    });
+
+    store.ensureTab('incoming');
+
+    expect(useChatStore.getState().getTab('thinking-keep')).toBeDefined();
+    expect(useChatStore.getState().getTab('old-1')).toBeUndefined();
+  });
+
   it('attachment-only tabs restore instead of being treated as empty cache misses', () => {
     const store = useChatStore.getState();
     store.ensureTab('attachments-only');

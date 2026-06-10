@@ -19,6 +19,69 @@ export interface ChangelogEntry {
  */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.11.0',
+    date: '2026-06-10',
+    highlights: {
+      zh: [
+        '新增「会话分组」：左侧会话可以建组收纳，拖拽排序、右键管理',
+        '新增 Claude Fable 5 模型（最强档位），可选标准版和 1M 大上下文版',
+        '主题新增紫色（替换原橘色），界面细节整体打磨',
+        'HTML 文件支持实时预览，聊天里的文件路径识别更聪明',
+      ],
+      en: [
+        'New session groups: organize sessions into groups with drag-to-reorder and right-click management',
+        'Added Claude Fable 5 (the most capable tier) — standard and 1M-context variants',
+        'New purple theme (replaces orange) with overall UI polish',
+        'HTML live preview, plus smarter file-path detection in chat',
+      ],
+    },
+    categories: [
+      {
+        label: { zh: '新增', en: 'New' },
+        items: {
+          zh: [
+            '会话分组 — 工作区下可建「组」收纳会话：组卡片拖拽重排、右键归组/移出/重命名/删除、组内直接新建会话；会话文件永不移动，归组换组不影响续聊',
+            'Claude Fable 5 模型支持 — 列表新增 Fable 5 标准版和 1M 上下文版并置顶，默认模型仍是 Sonnet 4.6',
+            'HTML 实时预览 — 预览 HTML 文件时脚本可执行，交互页面直接看到运行效果',
+          ],
+          en: [
+            'Session groups — create groups under a workspace to organize sessions: drag group cards to reorder, right-click to assign/remove/rename/delete, create sessions inside a group; session files never move, so resuming is never affected',
+            'Claude Fable 5 support — standard and 1M-context variants added at the top of the model list; default stays Sonnet 4.6',
+            'HTML live preview — scripts run inside the HTML preview so interactive pages render for real',
+          ],
+        },
+      },
+      {
+        label: { zh: '改进', en: 'Improved' },
+        items: {
+          zh: [
+            '紫主题替换橘色 — 原来选橘色的会自动切换，气泡对齐、圆角、深色卡片配色整体打磨',
+            '文件路径识别更聪明 — 隐藏目录（.claude/）、无扩展名路径（src/build）、中文文件名都能点击定位，正文里的裸路径自动可点',
+            '旧版 CLI 选 Fable 5 时给出明确的「请升级 CLI」提示，不再误导你去换模型',
+          ],
+          en: [
+            'Purple theme replaces orange — existing orange users switch automatically; bubble alignment, radii and dark-card colors polished throughout',
+            'Smarter file-path detection — hidden dirs (.claude/), extension-less paths (src/build) and CJK filenames are all clickable; bare paths in messages become clickable too',
+            'Selecting Fable 5 on an outdated CLI now shows a clear "please update your CLI" hint instead of suggesting a model switch',
+          ],
+        },
+      },
+      {
+        label: { zh: '修复', en: 'Fixed' },
+        items: {
+          zh: [
+            '流式内容不再被缓存清理误伤 — 有未投递流式文本的会话不会被后台清理，已经看到的内容不再静默丢失（发现自 @suyuan2022）',
+            '新建会话掉组 — 新会话拿到正式 id 后仍留在原来的组里',
+          ],
+          en: [
+            'Streaming content protected from cache eviction — sessions with undelivered streamed text are never evicted, so what you saw never silently disappears (originally reported by @suyuan2022)',
+            'New sessions no longer fall out of their group once they receive a real session id',
+          ],
+        },
+      },
+    ],
+  },
+  {
     version: '0.10.8',
     date: '2026-05-29',
     highlights: {
