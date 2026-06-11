@@ -12,7 +12,6 @@
  */
 import { useChatStore } from '../stores/chatStore';
 import { useSessionStore } from '../stores/sessionStore';
-import { getEffectiveThinking } from '../stores/settingsStore';
 import { filterThinkingDeltaAfterPreservedSnapshot } from './thinkingDedupe';
 import {
   StreamController,
@@ -30,8 +29,7 @@ const sink: StreamSink = {
   updatePartialText: (tabId, text) =>
     useChatStore.getState().updatePartialMessage(tabId, text),
   updatePartialThinking: (tabId, text, stdinId) => {
-    const tab = useChatStore.getState().getTab(tabId);
-    if (getEffectiveThinking(tab?.sessionMeta) === 'off') return;
+    // NOVA: thinkingLevel fixed to 'high' — always process thinking deltas
     const currentThinking = useChatStore.getState().getTab(tabId)?.partialThinking ?? '';
     const filtered = filterThinkingDeltaAfterPreservedSnapshot({
       tabId,

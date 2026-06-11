@@ -683,6 +683,7 @@ const messages: Record<Locale, Record<string, string>> = {
     // Network / firewall hints
     'network.firewallHint': '网络连接失败，可能需要 VPN 或代理才能访问',
     'error.permissionHint': '权限不足，请以管理员身份运行，或检查防病毒软件是否锁定了相关目录',
+    'error.diskSpaceHint': '请清理磁盘空间（需要至少 200MB）或更换安装目录后重试。',
 
     // Changelog modal
     'changelog.title': '更新内容',
@@ -730,6 +731,14 @@ const messages: Record<Locale, Record<string, string>> = {
     'setup.nativeVerify': '正在验证文件完整性...',
     'setup.nativeInstall': '正在安装到系统...',
     'setup.npmFallback': '正在通过备用方式安装...',
+    // Bug 1: 首次启动自动部署相关
+    'setup.deploying': '正在部署 AI 引擎（约 30 秒）',
+    'setup.errorDiskSpace': '磁盘可用空间不足，请清理至少 200MB 空间后重试。',
+    'setup.errorPermission': '写入权限不足，请尝试以管理员身份运行或更改安装目录权限。',
+    'setup.errorNetwork': '网络连接异常，请检查防火墙或代理设置后重试。',
+    'setup.errorAntivirus': '文件下载后被拦截，可能是杀毒软件误报，请暂时关闭实时防护后重试。',
+    'setup.manualDownloadHint': '自动下载连续失败 3 次，请手动下载安装 Claude Code CLI：',
+    'setup.manualDownloadLink': '前往 Claude Code 官方下载页',
 
     // Permission dialog
     'perm.title': '需要文件访问权限',

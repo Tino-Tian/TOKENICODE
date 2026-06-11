@@ -1,34 +1,31 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { useSetupStore } from '../../stores/setupStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useProviderStore } from '../../stores/providerStore';
 import { useT } from '../../lib/i18n';
 import { stripAnsi } from '../../lib/strip-ansi';
 import { AiAvatar } from '../shared/AiAvatar';
-import { ApiUpgradePrompt } from './ApiUpgradePrompt';
 import {
   bridge,
   onDownloadProgress,
 } from '../../lib/tauri-bridge';
+import type { DeployResult } from '../../lib/tauri-bridge';
 
-/** Detect if an error message looks like a permission/access issue */
-function isPermissionError(msg: string): boolean {
-  const hints = ['EPERM', 'EACCES', 'permission denied', 'access denied',
-    'Access is denied', 'operation not permitted'];
-  const lower = msg.toLowerCase();
-  return hints.some(h => lower.includes(h.toLowerCase()));
+/** 将 Rust DeployResult 的 errorKind 映射为本地错误提示函数 */
+function isPermissionError(kind: string | null | undefined): boolean {
+  return kind === 'PermissionDenied';
 }
 
-/** Detect if an error message looks like a network/firewall issue */
-function isNetworkError(msg: string): boolean {
-  if (isPermissionError(msg)) return false;
-  const lower = msg.toLowerCase();
-  // Local extraction timeout is NOT a network issue
-  if (lower.includes('local extraction') || lower.includes('not a network issue')) return false;
-  const hints = ['timeout', 'timed out', 'network', 'connect', 'ENOTFOUND',
-    'ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'fetch', 'Failed to download',
-    'All install methods failed', 'dns', 'certificate'];
-  return hints.some(h => lower.includes(h.toLowerCase()));
+function isNetworkError(kind: string | null | undefined): boolean {
+  return kind === 'NetworkError' || kind === 'AllSourcesFailed';
+}
+
+function isDiskError(kind: string | null | undefined): boolean {
+  return kind === 'DiskSpaceLow';
+}
+
+function isAntivirusError(kind: string | null | undefined): boolean {
+  return kind === 'AntivirusBlock';
 }
 
 /**
@@ -55,57 +52,119 @@ export function SetupWizard() {
 
   const [downloadPercent, setDownloadPercent] = useState(0);
   const [downloadPhase, setDownloadPhase] = useState<string>('');
-  const [showApiPrompt, setShowApiPrompt] = useState(false);
+  const [deployFailCount, setDeployFailCount] = useState(0);
+  const [errorKind, setErrorKind] = useState<string | null>(null);
+  const [manualDownloadUrl, setManualDownloadUrl] = useState<string | null>(null);
+  const abortRef = useRef(false);
 
-  // NOVA: 检查当前活动提供商是否缺少 API key，若无则自动打开设置
-  const checkAndOpenSettings = useCallback(() => {
+  // NOVA: 自动配置工作目录（Mac: ~/Documents/NOVA, Win: D:\NOVA）
+  const autoWorkspace = useCallback(async () => {
+    const wd = useSettingsStore.getState().workingDirectory;
+    if (wd) return; // 已设置
+    try {
+      const novaPath = await bridge.getNovaWorkspace();
+      useSettingsStore.getState().setWorkingDirectory(novaPath);
+      console.log('[NOVA] Auto workspace:', novaPath);
+    } catch (e) {
+      console.error('[NOVA] Auto workspace failed:', e);
+    }
+  }, []);
+
+  // NOVA: 安装完成后检查本地模型状态，无 Ollama 则在聊天里引导安装
+  const checkOllamaAfterSetup = useCallback(() => {
+    const ollamaReady = useProviderStore.getState().ollamaReady;
     const provider = useProviderStore.getState().getActive();
-    if (provider && !provider.apiKey) {
-      setTimeout(() => {
-        useSettingsStore.setState({ settingsOpen: true });
-      }, 300);
-    }
+    const hasApiKey = provider?.apiKey && provider.apiKey.trim() !== '';
+
+    // 已有 Ollama 或有 API Key → 不打扰
+    if (ollamaReady || hasApiKey) return;
+
+    // 没 Ollama 也没 Key → 打开设置让用户了解状态
+    setTimeout(() => {
+      useSettingsStore.setState({ settingsOpen: true });
+    }, 500);
   }, []);
 
-  // Auto-detect CLI on mount — skip wizard entirely if found
-  useEffect(() => {
-    let cancelled = false;
-    async function detect() {
-      try {
-        const status = await bridge.checkClaudeCli();
-        if (cancelled) return;
-        if (status.installed && !status.git_bash_missing) {
-          setCliInfo(status.version ?? null, status.path ?? null);
-          setSetupCompleted(true);
-          // NOVA: 首次启动显示 API 引导
-          if (!localStorage.getItem('nova-api-prompt-shown')) {
-            setTimeout(() => setShowApiPrompt(true), 500);
-          } else {
-            // 引导已关闭过，但可能仍缺 API key — 自动弹设置
-            setTimeout(() => checkAndOpenSettings(), 500);
-          }
-          return;
-        }
-        // CLI installed but git-bash missing → treat as needing install
-        // (install_claude_cli will auto-install git-bash then detect existing CLI)
-        if (status.installed && status.git_bash_missing) {
-          setCliInfo(status.version ?? null, status.path ?? null);
-        }
-        setStep('not_installed');
-      } catch {
-        if (!cancelled) setStep('not_installed');
-      }
-    }
-    detect();
-    return () => { cancelled = true; };
-  }, []);
+  // Bug 1: 完成初始化流程（CLI 就绪后）
+  const finishSetup = useCallback(() => {
+    setSetupCompleted(true);
+    autoWorkspace();
+    setTimeout(() => checkOllamaAfterSetup(), 500);
+  }, [setSetupCompleted, autoWorkspace, checkOllamaAfterSetup]);
 
-  // Download-based install: Rust HTTP client downloads binary directly
-  const handleInstall = useCallback(async () => {
+  // Bug 1: 自动部署 CLI（融合检测 + 下载）
+  const autoDeploy = useCallback(async () => {
+    if (abortRef.current) return;
     setStep('installing');
     setError(null);
-    setDownloadPercent(0);
+    setErrorKind(null);
+    setDownloadPercent(2);
     setDownloadPhase('');
+
+    // 监听下载进度事件
+    const unlistenProgress = await onDownloadProgress((event) => {
+      setDownloadPercent(event.percent);
+      setDownloadPhase(event.phase);
+    });
+
+    try {
+      const result: DeployResult = await bridge.autoDeployCli(false);
+
+      if (abortRef.current) return;
+
+      if (result.success) {
+        // CLI 已存在或刚下载成功
+        setCliInfo(result.version ?? null, result.cliPath ?? null);
+        setStep('installed');
+        unlistenProgress();
+        await bridge.resetDeployFailCount();
+        setTimeout(() => finishSetup(), 800);
+        return;
+      }
+
+      // 失败
+      unlistenProgress();
+      setError(result.errorMessage ?? '未知错误');
+      setErrorKind(result.errorKind);
+      setManualDownloadUrl(result.manualDownloadUrl ?? null);
+
+      if (result.suggestManualDownload) {
+        setDeployFailCount(3);
+      } else {
+        const count = await bridge.getDeployFailCount();
+        setDeployFailCount(count);
+      }
+
+      setStep('install_failed');
+    } catch (err) {
+      if (abortRef.current) return;
+      unlistenProgress();
+      const msg = stripAnsi(String(err));
+      setError(msg);
+      setStep('install_failed');
+      try {
+        const count = await bridge.getDeployFailCount();
+        setDeployFailCount(count);
+      } catch { /* ignore */ }
+    }
+  }, [finishSetup]);
+
+  // Bug 1: Mount 时自动触发部署，不等待用户操作
+  useEffect(() => {
+    abortRef.current = false;
+    autoDeploy();
+    return () => { abortRef.current = true; };
+  }, []);
+
+  // 重试按钮：强制重新下载
+  const handleInstall = useCallback(async () => {
+    if (abortRef.current) return;
+    setStep('installing');
+    setError(null);
+    setErrorKind(null);
+    setDownloadPercent(2);
+    setDownloadPhase('');
+    setManualDownloadUrl(null);
 
     const unlistenProgress = await onDownloadProgress((event) => {
       setDownloadPercent(event.percent);
@@ -113,58 +172,55 @@ export function SetupWizard() {
     });
 
     try {
-      await bridge.installClaudeCli();
-      unlistenProgress();
+      const result: DeployResult = await bridge.autoDeployCli(true);
 
-      // Verify installation
-      const status = await bridge.checkClaudeCli();
-      if (status.installed) {
-        setCliInfo(status.version ?? null, status.path ?? null);
+      if (abortRef.current) return;
+
+      if (result.success) {
+        setCliInfo(result.version ?? null, result.cliPath ?? null);
         setStep('installed');
-        setTimeout(() => {
-          setSetupCompleted(true);
-          // NOVA: 首次安装完成后弹出 DeepSeek 更换提示
-          const hasSeenPrompt = localStorage.getItem('nova-api-prompt-shown');
-          if (!hasSeenPrompt) {
-            setTimeout(() => setShowApiPrompt(true), 800);
-          } else {
-            setTimeout(() => checkAndOpenSettings(), 800);
-          }
-        }, 1200);
-      } else {
-        setError('CLI not found after download');
-        setStep('install_failed');
+        unlistenProgress();
+        await bridge.resetDeployFailCount();
+        setDeployFailCount(0);
+        setTimeout(() => finishSetup(), 800);
+        return;
       }
-    } catch (err) {
+
       unlistenProgress();
-      setError(stripAnsi(String(err)));
+      setError(result.errorMessage ?? '未知错误');
+      setErrorKind(result.errorKind);
+      setManualDownloadUrl(result.manualDownloadUrl ?? null);
+      setDeployFailCount(result.suggestManualDownload ? 3 : deployFailCount + 1);
+      setStep('install_failed');
+    } catch (err) {
+      if (abortRef.current) return;
+      unlistenProgress();
+      const msg = stripAnsi(String(err));
+      setError(msg);
       setStep('install_failed');
     }
-  }, []);
+  }, [deployFailCount, finishSetup]);
 
   const handleSkip = useCallback(() => {
+    abortRef.current = true;
     setSetupCompleted(true);
   }, []);
 
   // Phase label for download progress
   const phaseLabel =
-    // Native binary install phases (primary path)
     downloadPhase === 'native_version' ? t('setup.nativeVersion')
     : downloadPhase === 'native_manifest' ? t('setup.nativeManifest')
     : downloadPhase === 'native_download' ? t('setup.nativeDownload')
     : downloadPhase === 'native_verify' ? t('setup.nativeVerify')
     : downloadPhase === 'native_install' ? t('setup.nativeInstall')
-    // npm fallback phases
     : downloadPhase === 'npm_fallback' ? t('setup.npmFallback')
     : downloadPhase === 'node_downloading' ? t('setup.downloadingNode')
     : downloadPhase === 'node_extracting' ? t('setup.extractingNode')
     : downloadPhase === 'node_complete' ? t('setup.preparingEnv')
     : downloadPhase === 'installing' ? t('setup.nativeInstall')
-    // Windows git phases
     : downloadPhase === 'git_downloading' ? t('setup.downloadingGit')
     : downloadPhase === 'git_extracting' ? t('setup.extractingGit')
     : downloadPhase === 'git_complete' ? t('setup.preparingEnv')
-    // Legacy phases
     : downloadPhase === 'version' ? t('setup.nativeVersion')
     : downloadPhase === 'downloading' ? t('setup.nativeDownload')
     : '';
@@ -218,7 +274,7 @@ export function SetupWizard() {
           </div>
         )}
 
-        {/* Step: Installing (download progress) */}
+        {/* Step: Installing (download progress) — Bug 1: 首次启动自动部署 */}
         {step === 'installing' && (
           <div className="space-y-4">
             <div className="flex items-center justify-center gap-2">
@@ -226,7 +282,9 @@ export function SetupWizard() {
                 /
               </span>
               <span className="text-sm text-text-muted">
-                {phaseLabel || t('setup.installing')}
+                {downloadPercent <= 5
+                  ? t('setup.deploying') // "正在部署 AI 引擎（约 30 秒）"
+                  : phaseLabel || t('setup.installing')}
               </span>
             </div>
             {/* Precise progress bar */}
@@ -242,30 +300,70 @@ export function SetupWizard() {
           </div>
         )}
 
-        {/* Step: Install Failed */}
+        {/* Step: Install Failed — Bug 1: 错误分类 + 手动下载指引 */}
         {step === 'install_failed' && (
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-red-500">
               {t('setup.installFailed')}
             </h2>
-            <p className="text-sm text-text-muted leading-relaxed">
-              {t('setup.installFailedDesc')}
-            </p>
+
+            {/* Bug 1: 具体错误原因 */}
+            {errorKind && (
+              <p className="text-sm text-text-muted leading-relaxed">
+                {isDiskError(errorKind) && t('setup.errorDiskSpace')}
+                {isPermissionError(errorKind) && t('setup.errorPermission')}
+                {isNetworkError(errorKind) && t('setup.errorNetwork')}
+                {isAntivirusError(errorKind) && t('setup.errorAntivirus')}
+                {errorKind === 'Unknown' && t('setup.installFailedDesc')}
+              </p>
+            )}
+
             {error && (
               <p className="text-xs text-red-400 font-mono bg-red-500/10 p-2 rounded-lg">
                 {error}
               </p>
             )}
-            {error && isPermissionError(error) && (
+
+            {/* 权限错误提示 */}
+            {isPermissionError(errorKind) && (
               <p className="text-xs text-amber-500">
                 {t('error.permissionHint')}
               </p>
             )}
-            {error && !isPermissionError(error) && isNetworkError(error) && (
+
+            {/* 网络错误提示 */}
+            {isNetworkError(errorKind) && (
               <p className="text-xs text-amber-500">
                 {t('network.firewallHint')}
               </p>
             )}
+
+            {/* 磁盘不足提示 */}
+            {isDiskError(errorKind) && (
+              <p className="text-xs text-amber-500">
+                {t('error.diskSpaceHint')}
+              </p>
+            )}
+
+            {/* Bug 1: 连续3次失败 → 手动下载指引 */}
+            {deployFailCount >= 3 && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 space-y-2">
+                <p className="text-xs text-amber-500 font-medium">
+                  {t('setup.manualDownloadHint')}
+                </p>
+                {manualDownloadUrl && (
+                  <a
+                    href={manualDownloadUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-accent hover:underline inline-block"
+                  >
+                    {t('setup.manualDownloadLink')}
+                  </a>
+                )}
+              </div>
+            )}
+
             <div className="flex gap-3 justify-center">
               <button onClick={handleInstall}
                 className="px-4 py-2 rounded-xl text-sm font-medium
@@ -302,24 +400,6 @@ export function SetupWizard() {
           </div>
         )}
       </div>
-
-      {/* NOVA: DeepSeek 更换引导弹窗 */}
-      {showApiPrompt && (
-        <ApiUpgradePrompt
-          onClose={() => {
-            localStorage.setItem('nova-api-prompt-shown', '1');
-            setShowApiPrompt(false);
-            // NOVA: 弹窗关闭后检查是否还没填 API key，没填就弹设置
-            checkAndOpenSettings();
-          }}
-          onUpgrade={() => {
-            localStorage.setItem('nova-api-prompt-shown', '1');
-            setShowApiPrompt(false);
-            // 打开设置面板让用户更换 API
-            useSettingsStore.setState({ settingsOpen: true });
-          }}
-        />
-      )}
     </div>
   );
 }

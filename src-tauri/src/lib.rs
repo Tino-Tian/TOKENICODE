@@ -1,7 +1,9 @@
 mod commands;
 pub mod env_manager;
 mod events;
+mod local_inference;
 pub mod path_access;
+mod proxy;
 mod protocol;
 // windows_ps compiles on all platforms so its pure-logic tests run on
 // non-Windows CI; it is only *invoked* from `#[cfg(target_os = "windows")]`
@@ -11,7 +13,8 @@ mod windows_ps;
 use crate::events::emit_to_frontend;
 use crate::path_access::{PathAccessManager, PathCapability};
 use commands::{
-    BypassModeMap, ManagedProcess, ProcessManager, SessionInfo, StartSessionParams, StdinManager,
+    auto_deploy_cli, get_deploy_fail_count, reset_deploy_fail_count, BypassModeMap,
+    ManagedProcess, ProcessManager, SessionInfo, StartSessionParams, StdinManager,
 };
 // protocol module kept for ControlRequest (send_control_request) and tests
 use futures_util::StreamExt;
@@ -101,9 +104,11 @@ const CLI_GCS_BASE: &str = "https://storage.googleapis.com/claude-code-dist-86c5
 /// Self-hosted mirror for China users.
 const CLI_MIRROR_BASE: &str = "https://herear.cn:8443/releases/claude-code";
 
-/// Path to the CLI download directory under the app's local data dir.
+/// Path to the CLI download directory (%LOCALAPPDATA%/NOVA/cli/ on Windows,
+/// ~/.local/share/NOVA/cli/ on Linux, ~/Library/Application Support/NOVA/cli/ on macOS).
+/// Unified with the NSIS installer path and PATH manipulation.
 pub(crate) fn cli_download_dir() -> Option<std::path::PathBuf> {
-    dirs::data_local_dir().map(|d| d.join(APP_DATA_DIR_NAME).join("cli"))
+    dirs::data_local_dir().map(|d| d.join("NOVA").join("cli"))
 }
 
 /// Path to the local Git installation directory (Windows only).
@@ -1087,9 +1092,65 @@ fn resolve_provider_env(provider_id: Option<&str>) -> Result<ProviderEnvResoluti
 
     let mut env = HashMap::new();
 
-    // Set base URL
+    // Start format proxy for OpenAI-format providers (e.g. Agnes AI).
+    // Their vLLM backend requires OpenAI-style tool definitions but the CLI
+    // sends Anthropic-format tools. The proxy translates on the fly.
+    macro_rules! log_proxy {
+        ($($arg:tt)*) => {{
+            let msg = format!($($arg)*);
+            let full = format!("[TOKENICODE] {}", msg);
+            eprintln!("{}", full);
+            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/nova_proxy.log") {
+                use std::io::Write;
+                let _ = writeln!(f, "{}", full);
+            }
+        }};
+    }
+    log_proxy!(
+        "provider check: api_format={}, base_url={}, has_key={}",
+        provider.api_format,
+        provider.base_url,
+        provider.api_key.as_ref().map_or(false, |k| !k.is_empty()),
+    );
+    let proxy_port: Option<u16> = if provider.api_format.eq_ignore_ascii_case("openai")
+        && !provider.base_url.is_empty()
+        && provider.api_key.as_ref().map_or(false, |k| !k.is_empty())
+    {
+        let base = provider.base_url.clone();
+        let key = provider.api_key.clone().unwrap_or_default();
+        // block_in_place 防止在 tokio 异步任务中 block_on 导致死锁
+        match tokio::task::block_in_place(|| {
+            tokio::runtime::Handle::current().block_on(proxy::start_proxy(base, key))
+        }) {
+            Ok(p) => {
+                log_proxy!("format proxy started on port {}", p.port);
+                Some(p.port)
+            }
+            Err(e) => {
+                log_proxy!("format proxy failed: {e}");
+                None
+            }
+        }
+    } else {
+        log_proxy!(
+            "proxy skipped: openai={} base_nonempty={} key_nonempty={}",
+            provider.api_format.eq_ignore_ascii_case("openai"),
+            !provider.base_url.is_empty(),
+            provider.api_key.as_ref().map_or(false, |k| !k.is_empty()),
+        );
+        None
+    };
+
+    // Set base URL — for OpenAI-format providers, point CLI at local proxy
     if !provider.base_url.is_empty() {
-        env.insert("ANTHROPIC_BASE_URL".to_string(), provider.base_url.clone());
+        if let Some(port) = proxy_port {
+            env.insert(
+                "ANTHROPIC_BASE_URL".to_string(),
+                format!("http://127.0.0.1:{port}"),
+            );
+        } else {
+            env.insert("ANTHROPIC_BASE_URL".to_string(), provider.base_url.clone());
+        }
     }
 
     // Set API key (plaintext, no encryption).
@@ -1762,16 +1823,6 @@ async fn start_claude_session(
     args.push("--permission-prompt-tool".to_string());
     args.push("stdio".to_string());
 
-    // Extended thinking + effort level
-    let thinking_level = params.thinking_level.as_deref().unwrap_or("high");
-    if thinking_level == "off" {
-        // Explicitly disable thinking — CLI defaults to enabled, so we must pass false
-        args.push("--settings".to_string());
-        args.push(r#"{"alwaysThinkingEnabled":false}"#.to_string());
-    } else {
-        args.push("--settings".to_string());
-        args.push(r#"{"alwaysThinkingEnabled":true}"#.to_string());
-    }
 
     // Resolve claude binary — it may not be on the default PATH
     let claude_bin = find_claude_binary().unwrap_or_else(|| {
@@ -1816,6 +1867,9 @@ async fn start_claude_session(
         );
     }
 
+    // Extended thinking + effort level
+    let thinking_level = params.thinking_level.as_deref().unwrap_or("high");
+
     // Apply effort level for non-off thinking levels.
     // Native Claude keeps the existing env path. Anthropic-format API
     // providers use the CLI's public --effort flag so the setting can reach
@@ -1829,6 +1883,18 @@ async fn start_claude_session(
         args.push("--effort".to_string());
         args.push(thinking_level.to_string());
     }
+
+    // Enable/disable extended thinking based on provider capability.
+    // OpenAI-format providers (Agnes AI etc.) do not support Anthropic
+    // extended thinking; forcing it causes 400 errors.
+    if thinking_level != "off" && provider_caps.supports_thinking_effort {
+        args.push("--settings".to_string());
+        args.push(r#"{"alwaysThinkingEnabled":true}"#.to_string());
+    } else {
+        args.push("--settings".to_string());
+        args.push(r#"{"alwaysThinkingEnabled":false}"#.to_string());
+    }
+
 
     // Raise the per-turn output token cap from the CLI default (32K) to 64K.
     // NEW-N (v3 §4.3): CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000 confuses some
@@ -1938,6 +2004,27 @@ async fn start_claude_session(
                 }
             }
         }
+    }
+
+    // NOVA: 防止 HTTP_PROXY 拦截本地请求（格式代理和 localhost）
+    // FlClash/Clash 等代理软件会通过 HTTP_PROXY 环境变量影响子进程，
+    // 导致 CLI 发往 127.0.0.1 格式代理的请求也走代理 → 超时卡死。
+    {
+        let mut no_proxy_parts: Vec<String> = vec!["127.0.0.1".to_string(), "localhost".to_string()];
+        // 保留已有的 no_proxy 值
+        if let Ok(existing) = std::env::var("no_proxy")
+            .or_else(|_| std::env::var("NO_PROXY"))
+        {
+            for part in existing.split(',') {
+                let trimmed = part.trim().to_string();
+                if !trimmed.is_empty() && !no_proxy_parts.contains(&trimmed) {
+                    no_proxy_parts.push(trimmed);
+                }
+            }
+        }
+        let no_proxy_val = no_proxy_parts.join(",");
+        resolved_env.insert("no_proxy".to_string(), no_proxy_val.clone());
+        resolved_env.insert("NO_PROXY".to_string(), no_proxy_val);
     }
 
     // On Windows, .cmd/.bat files must be launched via cmd /C
@@ -5831,7 +5918,7 @@ async fn detect_china_network() -> bool {
     is_china
 }
 
-async fn is_china_network() -> bool {
+pub(crate) async fn is_china_network() -> bool {
     if let Some(&cached) = CHINA_NETWORK.get() {
         return cached;
     }
@@ -6128,7 +6215,7 @@ async fn choose_native_sources(china: bool) -> Vec<(&'static str, String)> {
 /// optional-dependency fragility that caused TK-0.10.5's Windows install
 /// failure (bin/claude.exe shipped by `@anthropic-ai/claude-code` was corrupt,
 /// triggering Windows error 193 "16-bit application not supported").
-async fn try_native_cli_download(app: Option<&AppHandle>, china: bool) -> Result<String, String> {
+pub(crate) async fn try_native_cli_download(app: Option<&AppHandle>, china: bool) -> Result<String, String> {
     let sources = choose_native_sources(china).await;
     if sources.is_empty() {
         return Err("No native release source reachable".to_string());
@@ -6184,11 +6271,12 @@ async fn try_native_cli_download(app: Option<&AppHandle>, china: bool) -> Result
         ));
     }
 
-    // 2. Install path: ~/.claude/local/ (same layout as official install.sh).
-    let home = dirs::home_dir().ok_or("Cannot determine home directory")?;
-    let install_dir = home.join(".claude").join("local");
+    // 2. Install path: cli_download_dir() (%LOCALAPPDATA%/NOVA/cli/ on Windows,
+    //    ~/.local/share/NOVA/cli/ on Linux, ~/Library/Application Support/NOVA/cli/ on macOS).
+    let install_dir = cli_download_dir()
+        .ok_or("Cannot determine CLI download directory")?;
     std::fs::create_dir_all(&install_dir)
-        .map_err(|e| format!("Cannot create ~/.claude/local/: {e}"))?;
+        .map_err(|e| format!("Cannot create CLI directory: {e}"))?;
     let dest_path = install_dir.join(&binary_name);
     let tmp_path = install_dir.join(format!("{}.tmp", binary_name));
 
@@ -6717,7 +6805,7 @@ fn inject_unix_shell_path(dir: &str) {
 }
 
 /// Post-install: add relevant directories to Windows user PATH and emit completion.
-fn finalize_cli_install_paths(app: &AppHandle) {
+pub(crate) fn finalize_cli_install_paths(app: &AppHandle) {
     #[cfg(target_os = "windows")]
     {
         // Collect all directories that should be on PATH
@@ -8044,17 +8132,14 @@ pub fn run() {
             app.handle()
                 .plugin(tauri_plugin_updater::Builder::new().build())?;
 
-            // Register test harness socket server (debug builds only).
-            // Provides a Unix socket that tokenicode-cli.mjs connects to for
-            // automated GUI testing. Release builds never include this.
+            // Register test harness (debug builds only).
+            // crates.io 版 MCP 插件使用 Builder API; 此处简化处理.
             #[cfg(debug_assertions)]
             {
-                let mcp_config = tauri_plugin_mcp::PluginConfig::new("TOKENICODE".to_string())
-                    .start_socket_server(true)
-                    .socket_path(std::path::PathBuf::from("/tmp/tokenicode-test.sock"));
-                app.handle()
-                    .plugin(tauri_plugin_mcp::init_with_config(mcp_config))?;
-                eprintln!("[TOKENICODE] Test harness registered on /tmp/tokenicode-test.sock");
+                let _ = app.handle().plugin(
+                    tauri_plugin_mcp::Builder::default().build()
+                );
+                eprintln!("[NOVA] MCP test harness registered (debug)");
             }
 
             #[cfg(not(desktop))]
@@ -8114,6 +8199,9 @@ pub fn run() {
             pin_cli,
             unpin_cli,
             get_pinned_cli,
+            auto_deploy_cli,
+            get_deploy_fail_count,
+            reset_deploy_fail_count,
             inject_cli_path,
             delete_cli,
             repair_cli,
@@ -8139,9 +8227,153 @@ pub fn run() {
             send_control_request,
             commands::feedback::submit_feedback,
             commands::feedback::feedback_is_configured,
+            check_ollama,
+            start_local_chat,
+            get_home_dir,
+            get_nova_workspace,
+            create_project_dir,
+            install_bundled_ollama,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+// ================================================================
+// NOVA: 本地模型推理命令
+// ================================================================
+
+/// 获取用户主目录路径
+#[tauri::command]
+fn get_home_dir() -> Result<String, String> {
+    dirs::home_dir()
+        .map(|p| p.to_string_lossy().to_string())
+        .ok_or_else(|| "Cannot find home directory".to_string())
+}
+
+/// 获取默认 NOVA 工作目录, 自动创建
+/// Windows: 依次尝试 D:\NOVA_Projects → %USERPROFILE%\NOVA_Projects
+/// 若 D 盘不存在或无写权限 → 静默回退到 C 盘用户目录
+/// macOS/Linux: ~/Documents/NOVA_Projects → ~/NOVA_Projects
+#[tauri::command]
+fn get_nova_workspace() -> Result<String, String> {
+    let path = resolve_nova_workspace();
+    std::fs::create_dir_all(&path)
+        .map_err(|e| format!("Cannot create workspace: {}", e))?;
+    Ok(path.to_string_lossy().to_string())
+}
+
+/// 解析 NOVA 工作目录路径（不创建），供 create_project_dir 复用
+fn resolve_nova_workspace() -> std::path::PathBuf {
+    #[cfg(target_os = "windows")]
+    {
+        // 优先 D 盘
+        let d_drive = std::path::PathBuf::from("D:\\NOVA_Projects");
+        // 尝试在 D 盘创建（快速检测是否存在/可写）
+        if std::fs::create_dir_all(&d_drive).is_ok() {
+            return d_drive;
+        }
+        // 回退到用户目录
+        if let Some(home) = dirs::home_dir() {
+            return home.join("NOVA_Projects");
+        }
+        // 终极兜底
+        std::path::PathBuf::from("C:\\NOVA_Projects")
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        if let Some(home) = dirs::home_dir() {
+            // macOS: 优先 ~/Documents/NOVA_Projects
+            let doc = home.join("Documents").join("NOVA_Projects");
+            if std::fs::create_dir_all(&doc).is_ok() {
+                return doc;
+            }
+            // 回退: ~/NOVA_Projects
+            return home.join("NOVA_Projects");
+        }
+        std::path::PathBuf::from("NOVA_Projects")
+    }
+}
+
+/// 首次创建任务时自动创建项目文件夹, 返回完整路径给前端
+/// 逻辑同 get_nova_workspace：优先 D 盘，静默回退
+#[tauri::command]
+fn create_project_dir() -> Result<String, String> {
+    let path = resolve_nova_workspace();
+    std::fs::create_dir_all(&path)
+        .map_err(|e| format!("Cannot create project directory: {}", e))?;
+    Ok(path.to_string_lossy().to_string())
+}
+
+/// 安装内嵌的 Ollama 二进制到 /usr/local/bin/ollama
+/// 需要管理员权限（会弹出 Touch ID / 密码验证）
+#[tauri::command]
+async fn install_bundled_ollama() -> Result<String, String> {
+    let target_path = std::path::PathBuf::from("/usr/local/bin/ollama");
+
+    // 如果已安装，直接返回
+    if target_path.exists() {
+        return Ok("already_installed".to_string());
+    }
+
+    // 找到内嵌的 ollama 二进制
+    let resource_path = match std::env::current_exe() {
+        Ok(exe) => {
+            let bundle = exe.parent().unwrap().parent().unwrap();
+            bundle.join("Resources").join("ollama")
+        }
+        Err(_) => {
+            // 开发模式：尝试从项目目录找
+            std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .parent().unwrap()
+                .join("tools").join("ollama")
+        }
+    };
+
+    if !resource_path.exists() {
+        return Err(format!("找不到内嵌的 Ollama 二进制文件: {}", resource_path.display()));
+    }
+
+    // 使用 osascript 提权执行复制（会触发 Touch ID / 密码弹窗）
+    let script = format!(
+        "do shell script \"mkdir -p /usr/local/bin && cp '{}' '{}' && chmod 755 '{}' && nohup '{}' serve > /dev/null 2>&1 &\" with administrator privileges",
+        resource_path.display(),
+        target_path.display(),
+        target_path.display(),
+        target_path.display()
+    );
+
+    let output = std::process::Command::new("osascript")
+        .arg("-e")
+        .arg(&script)
+        .output()
+        .map_err(|e| format!("无法执行安装脚本: {}", e))?;
+
+    if output.status.success() {
+        Ok("installed".to_string())
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        // 用户取消了权限弹窗
+        if stderr.contains("User canceled") || stderr.contains("(-128)") {
+            Err("cancelled".to_string())
+        } else {
+            Err(format!("安装失败: {}", stderr.trim()))
+        }
+    }
+}
+
+/// 检测 Ollama 是否运行, 返回状态和可用模型列表
+#[tauri::command]
+async fn check_ollama() -> Result<local_inference::OllamaStatus, String> {
+    Ok(local_inference::check_ollama().await)
+}
+
+/// 启动本地模型聊天 (Ollama), 通过 Tauri 事件流式推送响应
+#[tauri::command]
+async fn start_local_chat(
+    app: AppHandle,
+    params: local_inference::LocalChatParams,
+) -> Result<(), String> {
+    local_inference::chat_ollama_stream(app, params).await
 }
 
 #[cfg(test)]

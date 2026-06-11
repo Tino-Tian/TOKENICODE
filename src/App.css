@@ -125,6 +125,57 @@
 }
 
 /* ================================================================
+   :root 显式颜色变量 — 确保 WebView2 首次渲染即为深色，
+   不闪白屏。与 @theme 块和 .dark 类保持一致。
+   ================================================================ */
+:root {
+  --color-bg-primary: #080c14;
+  --color-bg-secondary: #0a0f1a;
+  --color-bg-tertiary: #0d1520;
+  --color-bg-chat: #0a0f1a;
+  --color-bg-sidebar: #080c14;
+  --color-bg-input: #0d1520;
+  --color-bg-user-msg: #0d1520;
+  --color-bg-assistant-msg: #0a0f1a;
+  --color-bg-tool: #0d1520;
+  --color-bg-thinking: #0a101c;
+  --color-bg-card: #080c14;
+  --color-bg-nav-active: rgba(0, 168, 232, 0.08);
+  --color-text-primary: #c8d8e8;
+  --color-text-secondary: #8899aa;
+  --color-text-tertiary: #5a7288;
+  --color-text-inverse: #080c14;
+  --color-text-muted: #5a7288;
+  --color-border: #141c28;
+  --color-border-subtle: #141c28;
+  --color-border-focus: #00a8e8;
+  --color-accent: #00a8e8;
+  --color-accent-light: #1a3050;
+  --color-accent-hover: #0098d0;
+  --color-accent-glow: rgba(0, 168, 232, 0.08);
+  --color-success: #00a8e8;
+  --color-error: #ff4444;
+  --color-warning: #e8a800;
+  --color-gradient-start: #00a8e8;
+  --color-gradient-mid: #0088c0;
+  --color-gradient-end: #006898;
+  --color-syntax-keyword: #569cd6;
+  --color-syntax-string: #4ec9b0;
+  --color-syntax-number: #b5cea8;
+  --color-syntax-function: #dcdcaa;
+  --color-syntax-comment: #4a5568;
+  --color-syntax-type: #4ec9b0;
+  --color-syntax-builtin: #569cd6;
+  --color-syntax-delete: #f44747;
+  --color-syntax-meta: #6a6a6a;
+  --color-icon-slash: #00a8e8;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-glow: 0 0 2px rgba(0, 168, 232, 0.3);
+}
+
+/* ================================================================
    A11y & base
    ================================================================ */
 @media (prefers-reduced-motion: reduce) {

@@ -28,7 +28,7 @@ export function mapSessionModeToPermissionMode(mode: SessionMode): CliPermission
     case 'bypass': return 'bypassPermissions';
   }
 }
-export type ThinkingLevel = 'off' | 'low' | 'medium' | 'high' | 'max';
+export type ThinkingLevel = 'high';
 
 // --- Model options (display mapping) ---
 
@@ -64,7 +64,7 @@ interface SettingsState {
   sidebarWidth: number;
   /** Whether the CLI setup wizard has been completed or skipped */
   setupCompleted: boolean;
-  /** Thinking effort level: off disables, low/medium/high/max set effort */
+  /** Thinking effort — fixed to 'high' in NOVA. Backend param preserved but frontend no longer offers a selector. */
   thinkingLevel: ThinkingLevel;
   /** Whether a newer version is available (set by auto-check on startup) */
   updateAvailable: boolean;
@@ -148,7 +148,7 @@ export const useSettingsStore = create<SettingsState>()(
       fontSize: 18,
       sidebarWidth: 280,
       setupCompleted: false,
-      thinkingLevel: 'medium' as ThinkingLevel,
+      thinkingLevel: 'high' as ThinkingLevel,
       updateAvailable: false,
       updateVersion: '',
       cliUpdateAvailable: false,

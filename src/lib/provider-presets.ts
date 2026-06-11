@@ -20,6 +20,21 @@ export interface PresetProvider {
 
 export const PROVIDER_PRESETS: PresetProvider[] = [
   {
+    id: 'agnes',
+    name: 'Agnes AI（免费无限）',
+    baseUrl: 'https://apihub.agnes-ai.com/v1',
+    apiFormat: 'openai',
+    extra_env: {},
+    keyUrl: 'https://platform.agnes-ai.com/',
+    thinkingSupport: 'unknown',
+    defaultModel: 'agnes-2.0-flash',
+    defaultModels: {
+      opus: 'agnes-2.0-flash',
+      sonnet: 'agnes-2.0-flash',
+      haiku: 'agnes-2.0-flash',
+    },
+  },
+  {
     id: 'anthropic',
     name: 'Anthropic (官方)',
     baseUrl: 'https://api.anthropic.com',
@@ -27,20 +42,6 @@ export const PROVIDER_PRESETS: PresetProvider[] = [
     extra_env: {},
     keyUrl: 'https://console.anthropic.com/account/keys',
     thinkingSupport: 'full',
-  },
-  {
-    id: 'zhipu',
-    name: '智谱 GLM',
-    baseUrl: 'https://open.bigmodel.cn/api/anthropic',
-    apiFormat: 'anthropic',
-    extra_env: {},
-    keyUrl: 'https://bigmodel.cn/usercenter/proj-mgmt/apikeys',
-    thinkingSupport: 'full',
-    defaultModels: {
-      opus: 'glm-5',
-      sonnet: 'glm-5-turbo',
-      haiku: 'glm-4.7',
-    },
   },
   {
     id: 'kimi',

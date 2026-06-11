@@ -159,6 +159,17 @@ export interface DownloadProgressEvent {
        | 'git_downloading' | 'git_extracting' | 'git_complete';
 }
 
+/** Bug 1: CLI 自动部署结果 */
+export interface DeployResult {
+  success: boolean;
+  cliPath: string | null;
+  version: string | null;
+  errorKind: 'DiskSpaceLow' | 'NetworkError' | 'PermissionDenied' | 'AntivirusBlock' | 'AllSourcesFailed' | 'Unknown' | null;
+  errorMessage: string | null;
+  suggestManualDownload: boolean;
+  manualDownloadUrl: string | null;
+}
+
 export interface NodeEnvStatus {
   node_available: boolean;
   node_version: string | null;
@@ -287,6 +298,20 @@ export const bridge = {
   getHomeDir: () =>
     invoke<string>('get_home_dir'),
 
+  /** 获取默认 NOVA 工作目录，自动创建（Win: 优先D:\NOVA_Projects, 回退%USERPROFILE%\NOVA_Projects; Mac: ~/Documents/NOVA_Projects） */
+  getNovaWorkspace: () =>
+    invoke<string>('get_nova_workspace'),
+
+  /** 首次创建任务时自动创建项目文件夹，返回完整路径。
+   *  逻辑同 get_nova_workspace：优先 D 盘，不存在则静默回退。
+   *  前端"新任务"按钮点下即触发，无需额外 UI。 */
+  createProjectDir: () =>
+    invoke<string>('create_project_dir'),
+
+  /** 安装内嵌的 Ollama 二进制到 /usr/local/bin/ollama（需管理员权限） */
+  installBundledOllama: () =>
+    invoke<string>('install_bundled_ollama'),
+
   exportSessionMarkdown: (path: string, outputPath: string, conversationOnly = false) =>
     invoke<void>('export_session_markdown', { path, outputPath, conversationOnly }),
 
@@ -386,6 +411,18 @@ export const bridge = {
   repairCli: () =>
     invoke<{ scanned: string[]; removed: string[]; notes: string[] }>('repair_cli'),
 
+  /** Bug 1: 首次启动自动检测并部署 CLI（Tier 0-4 检测 → 自动下载） */
+  autoDeployCli: (forceInstall: boolean) =>
+    invoke<DeployResult>('auto_deploy_cli', { forceInstall }),
+
+  /** 查询 CLI 部署失败次数 */
+  getDeployFailCount: () =>
+    invoke<number>('get_deploy_fail_count'),
+
+  /** 重置 CLI 部署失败次数 */
+  resetDeployFailCount: () =>
+    invoke<void>('reset_deploy_fail_count'),
+
   installClaudeCli: () =>
     invoke<void>('install_claude_cli'),
 
@@ -447,6 +484,13 @@ export const bridge = {
 
   testProviderConnection: (baseUrl: string, apiFormat: string, apiKey: string, model: string, proxyUrl?: string) =>
     invoke<ConnectionTestResult>('test_provider_connection', { baseUrl, apiFormat, apiKey, model, proxyUrl: proxyUrl || null }),
+
+  // NOVA: 本地推理
+  checkOllama: () =>
+    invoke<OllamaStatus>('check_ollama'),
+
+  startLocalChat: (params: LocalChatParams) =>
+    invoke<void>('start_local_chat', { params }),
 
 
   // --- SDK Control Protocol ---
@@ -608,6 +652,65 @@ export function onFileChange(
 ): Promise<UnlistenFn> {
   return listen<FileChangeEvent>(
     'fs:change',
+    (event) => callback(event.payload),
+  );
+}
+
+// ================================================================
+// NOVA: 本地模型推理 (Ollama)
+// ================================================================
+
+export interface OllamaModel {
+  name: string;
+  size: number;
+}
+
+export interface OllamaStatus {
+  running: boolean;
+  models: OllamaModel[];
+  error: string | null;
+}
+
+export interface LocalMessage {
+  role: string;
+  content: string;
+}
+
+export interface LocalChatParams {
+  stdin_id: string;
+  model: string;
+  messages: LocalMessage[];
+  system?: string;
+}
+
+/** 检测 Ollama 是否运行 + 列出可用模型 */
+export async function checkOllama(): Promise<OllamaStatus> {
+  return invoke<OllamaStatus>('check_ollama');
+}
+
+/** 启动本地 Ollama 聊天, 流式响应通过 Tauri 事件推送 */
+export async function startLocalChat(params: LocalChatParams): Promise<void> {
+  return invoke<void>('start_local_chat', { params });
+}
+
+/** 监听本地模型流消息 */
+export function onLocalStream(
+  stdinId: string,
+  callback: (message: any) => void,
+): Promise<UnlistenFn> {
+  return listen<any>(
+    `local:stream:${stdinId}`,
+    (event) => callback(event.payload),
+  );
+}
+
+/** 监听本地模型会话结束 */
+export function onLocalExit(
+  stdinId: string,
+  callback: (code: number | null) => void,
+): Promise<UnlistenFn> {
+  return listen<number | null>(
+    `local:exit:${stdinId}`,
     (event) => callback(event.payload),
   );
 }

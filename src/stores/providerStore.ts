@@ -25,6 +25,12 @@ interface ProviderState {
   providers: ApiProvider[];
   activeProviderId: string | null;
   loaded: boolean;
+  /** Ollama 是否可用 */
+  ollamaReady: boolean;
+  /** Ollama 可用模型列表 */
+  ollamaModels: Array<{ name: string; size: number }>;
+  /** 是否已经弹出过首次任务结束后的 DeepSeek 引导 */
+  deepseekPromptShown: boolean;
 
   load: () => Promise<void>;
   save: () => Promise<void>;
@@ -33,6 +39,10 @@ interface ProviderState {
   deleteProvider: (id: string) => void;
   setActive: (id: string | null) => void;
   getActive: () => ApiProvider | null;
+  /** 检测 Ollama 并自动创建本地 provider */
+  detectOllama: () => Promise<void>;
+  /** 标记 DeepSeek 引导已显示 */
+  markDeepseekPromptShown: () => void;
 }
 
 function generateId(): string {
@@ -52,6 +62,9 @@ export const useProviderStore = create<ProviderState>()((set, get) => ({
   providers: [],
   activeProviderId: null,
   loaded: false,
+  ollamaReady: false,
+  ollamaModels: [],
+  deepseekPromptShown: localStorage.getItem('nova-deepseek-prompt-shown') === '1',
 
   load: async () => {
     try {
@@ -65,30 +78,64 @@ export const useProviderStore = create<ProviderState>()((set, get) => ({
           data.activeProviderId = migrated.id;
           await bridge.saveProviders(data);
           console.log('[providerStore] Migrated old API settings to provider:', migrated.name);
+        } else {
+          // NOVA: 全新安装 — 自动创建 Agnes AI 免费 provider
+          const agnesProvider: ApiProvider = {
+            id: generateId(),
+            name: "Agnes AI（免费无限）",
+            baseUrl: "https://apihub.agnes-ai.com/v1",
+            apiFormat: "openai",
+            apiKey: "sk-o5BUpyY2j6D57I2F1XqSmOt1Qnr1ffiz4Y1TKpX4MKBmJNbt",
+            modelMappings: [
+              { tier: "opus", providerModel: "agnes-2.0-flash" },
+              { tier: "sonnet", providerModel: "agnes-2.0-flash" },
+              { tier: "haiku", providerModel: "agnes-2.0-flash" },
+            ],
+            preset: "agnes",
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          };
+          data.providers = [agnesProvider];
+          data.activeProviderId = agnesProvider.id;
+          await bridge.saveProviders(data);
+          console.log("[providerStore] Fresh install -- auto-created Agnes AI provider");
         }
       }
 
-      // NOVA: If still empty, create default Zhipu GLM provider
-      if (data.providers.length === 0) {
-        const defaultProvider: ApiProvider = {
-          id: generateId(),
-          name: '智谱 GLM（免费版）',
-          baseUrl: 'https://open.bigmodel.cn/api/anthropic',
-          apiFormat: 'anthropic',
-          apiKey: '',
-          modelMappings: [
-            { tier: 'opus', providerModel: 'glm-5' },
-            { tier: 'sonnet', providerModel: 'glm-5-turbo' },
-            { tier: 'haiku', providerModel: 'glm-4.7' },
-          ],
-          preset: 'zhipu',
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        };
-        data.providers = [defaultProvider];
-        data.activeProviderId = defaultProvider.id;
-        await bridge.saveProviders(data);
-        console.log('[providerStore] Created default Zhipu GLM provider');
+      // NOVA: 即使有旧 providers，检查是否有可用的（有 API key 或 Ollama）
+      // 如果没有，自动插入 Agnes AI 作为推荐默认
+      const hasUsableProvider = data.providers.some(
+        (p: any) => p.apiKey || p.preset === 'ollama'
+      );
+
+      if (!hasUsableProvider) {
+        const existingAgnes = data.providers.find((p: any) => p.preset === 'agnes');
+        if (!existingAgnes) {
+          const agnesProvider: ApiProvider = {
+            id: generateId(),
+            name: "Agnes AI（免费无限）",
+            baseUrl: "https://apihub.agnes-ai.com/v1",
+            apiFormat: "openai",
+            apiKey: "sk-o5BUpyY2j6D57I2F1XqSmOt1Qnr1ffiz4Y1TKpX4MKBmJNbt",
+            modelMappings: [
+              { tier: "opus", providerModel: "agnes-2.0-flash" },
+              { tier: "sonnet", providerModel: "agnes-2.0-flash" },
+              { tier: "haiku", providerModel: "agnes-2.0-flash" },
+            ],
+            preset: "agnes",
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          };
+          data.providers.unshift(agnesProvider);
+          data.activeProviderId = agnesProvider.id;
+          await bridge.saveProviders(data);
+          console.log("[providerStore] Added Agnes AI as default (no usable provider found)");
+        } else if (data.activeProviderId !== existingAgnes.id) {
+          // Agnes 已存在但未激活，切换过去
+          data.activeProviderId = existingAgnes.id;
+          await bridge.saveProviders(data);
+          console.log("[providerStore] Switched to existing Agnes AI provider");
+        }
       }
 
       set({
@@ -150,6 +197,60 @@ export const useProviderStore = create<ProviderState>()((set, get) => ({
     const { providers, activeProviderId } = get();
     if (!activeProviderId) return null;
     return providers.find((p) => p.id === activeProviderId) ?? null;
+  },
+
+  /** 检测本地 Ollama 是否可用，创建本地 provider */
+  detectOllama: async () => {
+    try {
+      const status = await bridge.checkOllama();
+      set({
+        ollamaReady: status.running,
+        ollamaModels: status.models,
+      });
+      if (status.running) {
+        // 自动创建或更新本地 Ollama provider
+        const { providers } = get();
+        const existingLocal = providers.find((p) => p.preset === 'ollama');
+        if (!existingLocal) {
+          const localProvider: ApiProvider = {
+            id: generateId(),
+            name: '本地模型 (Ollama)',
+            baseUrl: 'http://localhost:11434/v1',
+            apiFormat: 'openai',
+            apiKey: 'ollama',
+            modelMappings: status.models.slice(0, 5).map((m: { name: string; size: number }) => ({
+              tier: 'opus',
+              providerModel: m.name,
+            })),
+            preset: 'ollama',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          };
+          set((s) => ({
+            providers: [...s.providers, localProvider],
+            // 没有其他 provider 时设为默认
+            activeProviderId: s.activeProviderId ?? localProvider.id,
+          }));
+          debouncedSave(get());
+          console.log('[providerStore] Created local Ollama provider');
+        } else {
+          // 更新已有本地 provider 的模型列表
+          const updatedModels = status.models.slice(0, 5).map((m: { name: string; size: number }) => ({
+            tier: 'opus' as const,
+            providerModel: m.name,
+          }));
+          get().updateProvider(existingLocal.id, { modelMappings: updatedModels });
+        }
+      }
+    } catch (e) {
+      console.log('[providerStore] Ollama detection skipped:', e);
+      set({ ollamaReady: false, ollamaModels: [] });
+    }
+  },
+
+  markDeepseekPromptShown: () => {
+    localStorage.setItem('nova-deepseek-prompt-shown', '1');
+    set({ deepseekPromptShown: true });
   },
 }));
 

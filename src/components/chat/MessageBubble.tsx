@@ -2,6 +2,9 @@ import { memo, useState, type ReactNode } from 'react';
 import { type ChatMessage } from '../../stores/chatStore';
 import { useFileStore } from '../../stores/fileStore';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useSessionStore } from '../../stores/sessionStore';
+import { useChatStore } from '../../stores/chatStore';
+import { useProviderStore } from '../../stores/providerStore';
 import { useLightboxStore } from '../shared/ImageLightbox';
 import { useT } from '../../lib/i18n';
 import { MarkdownRenderer } from '../shared/MarkdownRenderer';
@@ -211,6 +214,12 @@ function CommandFeedbackMsg({ message }: Props) {
   const cType = message.commandType;
   const data = message.commandData || {};
 
+  // NOVA: DeepSeek API Key 直接输入状态
+  const [dsApiKey, setDsApiKey] = useState('');
+  const [dsSubmitting, setDsSubmitting] = useState(false);
+  const [dsStatus, setDsStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [dsError, setDsError] = useState('');
+
   // --- Mode switch: animated pill with icon ---
   if (cType === 'mode') {
     const modeColors: Record<string, string> = {
@@ -382,6 +391,135 @@ function CommandFeedbackMsg({ message }: Props) {
             <path d="M6 4v2.5M6 8v.5" />
           </svg>
           <span>{safeContent(message.content)}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // --- NOVA: DeepSeek 升级建议卡片（红色醒目，支持直接粘贴 API Key） ---
+  if (cType === 'deepseek_upgrade') {
+    const handleSubmitKey = async () => {
+      const key = dsApiKey.trim();
+      if (!key) return;
+      if (!key.startsWith('sk-')) {
+        setDsError('API Key 格式不对，DeepSeek 的 Key 以 sk- 开头，检查一下');
+        setDsStatus('error');
+        return;
+      }
+      setDsSubmitting(true);
+      setDsError('');
+      try {
+        const store = useProviderStore.getState();
+        const existing = store.providers.find((p) => p.preset === 'deepseek');
+        if (existing) {
+          store.updateProvider(existing.id, { apiKey: key });
+        } else {
+          store.addProvider({
+            name: 'DeepSeek 官方',
+            baseUrl: 'https://api.deepseek.com/v1',
+            apiFormat: 'openai',
+            apiKey: key,
+            modelMappings: [
+              { tier: 'opus', providerModel: 'deepseek-chat' },
+              { tier: 'sonnet', providerModel: 'deepseek-chat' },
+              { tier: 'haiku', providerModel: 'deepseek-chat' },
+            ],
+            preset: 'deepseek',
+          });
+        }
+        const updated = useProviderStore.getState().providers.find((p) => p.preset === 'deepseek');
+        if (updated) useProviderStore.getState().setActive(updated.id);
+        setDsStatus('success');
+      } catch (e: any) {
+        setDsError(e?.message || '保存失败，请重试');
+        setDsStatus('error');
+      } finally {
+        setDsSubmitting(false);
+      }
+    };
+
+    return (
+      <div className="ml-11 my-2 animate-fade-in">
+        <div className="rounded-xl border border-red-400/30
+          bg-red-600/5 overflow-hidden max-w-md">
+          <div className="flex items-center gap-2 px-4 py-2.5
+            border-b border-red-400/10 bg-red-500/8">
+            <span className="text-sm">🔴</span>
+            <span className="text-xs font-semibold text-red-400">升级建议</span>
+          </div>
+          <div className="px-4 py-3 text-xs text-text-muted leading-relaxed
+            whitespace-pre-wrap">
+            {safeContent(message.content)}
+          </div>
+          {/* API Key 输入区 */}
+          {dsStatus !== 'success' ? (
+            <div className="px-4 pb-2 space-y-2">
+              <div className="flex gap-1.5">
+                <input
+                  type="password"
+                  value={dsApiKey}
+                  onChange={(e) => { setDsApiKey(e.target.value); setDsStatus('idle'); setDsError(''); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSubmitKey(); }}
+                  placeholder="sk-...  粘贴 DeepSeek API Key"
+                  disabled={dsSubmitting}
+                  className="flex-1 px-2.5 py-1.5 rounded-lg text-[10px]
+                    bg-white/5 border border-red-400/20
+                    text-text-primary placeholder:text-text-tertiary
+                    focus:outline-none focus:border-red-400/50
+                    disabled:opacity-50 transition-smooth"
+                />
+                <button
+                  onClick={handleSubmitKey}
+                  disabled={dsSubmitting || !dsApiKey.trim()}
+                  className="px-3 py-1.5 rounded-lg text-[10px] font-medium
+                    bg-red-500 text-white
+                    hover:bg-red-600 disabled:opacity-40
+                    transition-smooth cursor-pointer whitespace-nowrap"
+                >
+                  {dsSubmitting ? '验证中…' : '确认换引擎'}
+                </button>
+              </div>
+              {dsStatus === 'error' && dsError && (
+                <p className="text-[10px] text-red-400">{dsError}</p>
+              )}
+            </div>
+          ) : (
+            <div className="px-4 pb-2">
+              <p className="text-[10px] text-emerald-400 font-medium">
+                ✅ DeepSeek 引擎已切换！下次对话自动生效。
+              </p>
+            </div>
+          )}
+          <div className="px-4 pb-3 flex gap-2">
+            {dsStatus !== 'success' && (
+              <button
+                onClick={() => useSettingsStore.setState({ settingsOpen: true })}
+                className="px-3 py-1.5 rounded-lg text-[10px] font-medium
+                  border border-red-400/20 text-red-400/70
+                  hover:text-red-400 hover:bg-red-500/5 transition-smooth cursor-pointer"
+              >
+                去设置面板配置
+              </button>
+            )}
+            {dsStatus !== 'success' && (
+              <button
+                onClick={() => {
+                  const tabId = useSessionStore.getState().selectedSessionId;
+                  if (tabId && message.id) {
+                    useChatStore.getState().updateMessage(tabId, message.id, {
+                      content: '✅ 已忽略。以后随时可以在设置里配置。',
+                      commandType: 'action',
+                    });
+                  }
+                }}
+                className="px-3 py-1.5 rounded-lg text-[10px] font-medium
+                  border border-border-subtle text-text-muted
+                  hover:text-text-primary hover:bg-bg-tertiary transition-smooth cursor-pointer"
+              >
+                以后再说
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );

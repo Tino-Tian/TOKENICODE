@@ -39,7 +39,7 @@ beforeEach(() => {
   // Reset settings relevant to the hash.
   useSettingsStore.setState({
     selectedModel: 'claude-sonnet-4-6',
-    thinkingLevel: 'medium',
+    thinkingLevel: 'high',
     sessionMode: 'code',
   });
 });
@@ -62,7 +62,7 @@ describe('spawnConfigHash', () => {
 
   it('changes when thinkingLevel changes', () => {
     const before = spawnConfigHash();
-    useSettingsStore.setState({ thinkingLevel: 'max' });
+    useSettingsStore.setState({ thinkingLevel: 'high' });
     const after = spawnConfigHash();
     expect(after).not.toBe(before);
   });

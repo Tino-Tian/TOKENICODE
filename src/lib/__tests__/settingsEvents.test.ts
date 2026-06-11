@@ -126,7 +126,7 @@ describe('settingsStore setters · emit on change', () => {
     const h = vi.fn();
     settingsEvents.on('thinking-changed', h);
     const initial = useSettingsStore.getState().thinkingLevel;
-    const next = initial === 'high' ? 'low' : 'high';
+    const next = 'high';
     useSettingsStore.getState().setThinkingLevel(next);
     expect(h).toHaveBeenCalledTimes(1);
     expect(h).toHaveBeenCalledWith({ old: initial, next });

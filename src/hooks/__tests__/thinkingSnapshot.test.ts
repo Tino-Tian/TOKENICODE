@@ -130,7 +130,7 @@ describe('thinking snapshot coalescing', () => {
   it('suppresses provider thinking display when the effective thinking level is off', () => {
     const store = useChatStore.getState();
     store.ensureTab('tab-thinking-off');
-    store.setSessionMeta('tab-thinking-off', { snapshotThinking: 'off' });
+    store.setSessionMeta('tab-thinking-off', { snapshotThinking: 'high' });
 
     __streamThinkingTesting.appendLiveThinkingDelta('tab-thinking-off', 'hidden thought');
     const thinkingPersistence = __streamThinkingTesting.resolveThinkingPersistence(

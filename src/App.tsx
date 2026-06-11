@@ -475,7 +475,23 @@ function App() {
   // Load custom session names and provider config on startup
   useEffect(() => {
     useSessionStore.getState().loadCustomPreviewsFromDisk();
-    useProviderStore.getState().load();
+    useProviderStore.getState().load().then(async () => {
+      // NOVA: 启动后自动检测 Ollama
+      useProviderStore.getState().detectOllama();
+
+      // NOVA: 自动配置工作目录（Mac: ~/Documents/NOVA, Win: D:\NOVA）
+      const wd = useSettingsStore.getState().workingDirectory;
+      const setupDone = useSettingsStore.getState().setupCompleted;
+      if (!wd && setupDone) {
+        try {
+          const novaPath = await bridge.getNovaWorkspace();
+          useSettingsStore.getState().setWorkingDirectory(novaPath);
+          console.log('[NOVA] Auto workspace:', novaPath);
+        } catch (e) {
+          console.error('[NOVA] Auto workspace failed:', e);
+        }
+      }
+    });
     // Notification permission is requested lazily on first need (see useStreamProcessor.ts)
   }, []);
 

@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
 import { useChatStore, useActiveTab, getActiveTabState, generateMessageId, isSessionBusy, registerLiveComposerSnapshotProvider, type ChatMessage } from '../../stores/chatStore';
-import { useSettingsStore, MODEL_OPTIONS, mapSessionModeToPermissionMode, setSessionModeLocal, type ThinkingLevel } from '../../stores/settingsStore';
+import { useSettingsStore, MODEL_OPTIONS, mapSessionModeToPermissionMode, setSessionModeLocal } from '../../stores/settingsStore';
 import { bridge, type UnifiedCommand } from '../../lib/tauri-bridge';
 import { ModelSelector } from './ModelSelector';
 // import { ModeSelector } from './ModeSelector';
@@ -16,25 +16,17 @@ import { SlashCommandPopover, getFilteredCommandList } from './SlashCommandPopov
 import { useCommandStore } from '../../stores/commandStore';
 import { envFingerprint, resolveModelForProvider, resolveModelOrError, spawnConfigHash } from '../../lib/api-provider';
 import { useProviderStore } from '../../stores/providerStore';
-import { PROVIDER_PRESETS } from '../../lib/provider-presets';
+
 import { stripAnsi } from '../../lib/strip-ansi';
 import { usePlanPanelStore } from './ChatPanel';
 import { PlanReviewCard } from './PlanReviewCard';
 import { PermissionCard } from './PermissionCard';
 import { QuestionCard } from './QuestionCard';
 import { TiptapEditor, type TiptapEditorHandle } from './TiptapEditor';
-import { spawnSession, teardownSession, cleanupStdinRoute, waitForStdinCleared } from '../../lib/sessionLifecycle';
+import { spawnSession, spawnLocalSession, teardownSession, cleanupStdinRoute, waitForStdinCleared } from '../../lib/sessionLifecycle';
 import type { FileAttachment } from '../../hooks/useFileAttachments';
 // drag-state import removed — tree drag handled by ChatPanel
 
-/** Thinking effort level configuration data */
-const THINK_LEVELS: { id: ThinkingLevel; labelKey: string }[] = [
-  { id: 'off', labelKey: 'think.off' },
-  { id: 'low', labelKey: 'think.low' },
-  { id: 'medium', labelKey: 'think.medium' },
-  { id: 'high', labelKey: 'think.high' },
-  { id: 'max', labelKey: 'think.max' },
-];
 
 function buildInterruptedContinuationPrompt(interruptedAssistantText: string, nextUserText: string): string {
   const cleanInterrupted = interruptedAssistantText.trim();
@@ -59,95 +51,7 @@ function hasResumableConversationEvidence(messages: ChatMessage[]): boolean {
   );
 }
 
-/** Thinking effort level selector dropdown for the toolbar */
-function ThinkLevelSelector({ disabled = false }: { disabled?: boolean }) {
-  const t = useT();
-  const thinkingLevel = useSettingsStore((s) => s.thinkingLevel);
-  const setThinkingLevel = useSettingsStore((s) => s.setThinkingLevel);
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
 
-  const thinkingSupport = useProviderStore((s) => {
-    if (!s.activeProviderId) return 'full';
-    const provider = s.providers.find((p) => p.id === s.activeProviderId);
-    if (!provider?.preset) return 'unknown';
-    return PROVIDER_PRESETS.find((p) => p.id === provider.preset)?.thinkingSupport ?? 'unknown';
-  });
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
-
-  const isOff = thinkingLevel === 'off';
-  const current = THINK_LEVELS.find((l) => l.id === thinkingLevel) || THINK_LEVELS[3];
-
-  return (
-    <div ref={ref} className={`relative ${disabled ? 'opacity-40 pointer-events-none' : ''}`}>
-      <button
-        onClick={() => setOpen(!open)}
-        className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs
-          border transition-smooth cursor-pointer
-          ${isOff
-            ? 'border-border-subtle bg-bg-secondary/50 text-text-muted hover:text-text-primary hover:bg-bg-secondary'
-            : 'border-amber-500/30 bg-amber-500/10 text-amber-500'
-          }`}
-      >
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"
-          stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="8" cy="6" r="4" />
-          <path d="M5.5 9.5C5.5 11.5 6 13 8 13s2.5-1.5 2.5-3.5" />
-          <path d="M6.5 14h3" />
-        </svg>
-        <span className="font-medium">{t(current.labelKey)}</span>
-        <svg width="8" height="8" viewBox="0 0 8 8" fill="none"
-          stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
-          className={`transition-transform duration-150 ${open ? 'rotate-180' : ''}`}>
-          <path d="M1.5 3L4 5.5 6.5 3" />
-        </svg>
-      </button>
-
-      {open && (
-        <div className="absolute bottom-full left-0 mb-1 min-w-[140px]
-          bg-bg-card border border-border-subtle rounded-lg shadow-lg
-          py-1 z-50 animate-fade-in">
-          {THINK_LEVELS.map((level) => {
-            const isActive = level.id === thinkingLevel;
-            return (
-              <button
-                key={level.id}
-                onClick={() => { setThinkingLevel(level.id); setOpen(false); }}
-                className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs
-                  transition-smooth cursor-pointer
-                  ${isActive
-                    ? 'bg-accent/10 text-accent font-medium'
-                    : 'text-text-muted hover:text-text-primary hover:bg-bg-secondary'
-                  }`}
-              >
-                {t(level.labelKey)}
-                {isActive && (
-                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none"
-                    stroke="currentColor" strokeWidth="1.5" className="ml-auto">
-                    <path d="M2.5 6l2.5 2.5 4.5-4.5" />
-                  </svg>
-                )}
-              </button>
-            );
-          })}
-          {thinkingSupport === 'ignored' && (
-            <div className="px-3 py-1.5 text-[10px] text-text-tertiary border-t border-border-subtle mt-1">
-              {t('think.providerIgnored')}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function PlanToggleButton() {
   const t = useT();
@@ -999,6 +903,115 @@ export function InputBar() {
         setActivityStatus(tabId, { phase: 'thinking' });
       };
 
+      // NOVA: 本地模式检测 — 无 API Key 且 Ollama 可用时走本地推理
+      const _activeProvider = useProviderStore.getState().getActive();
+      const _hasApiKey = _activeProvider?.apiKey && _activeProvider.apiKey.trim() !== '';
+      const _ollamaReady = useProviderStore.getState().ollamaReady;
+      const _ollamaModels = useProviderStore.getState().ollamaModels;
+
+      if (!_hasApiKey && _ollamaReady && _ollamaModels.length > 0) {
+        const localModel = _ollamaModels[0].name;
+        const preLocalId = `local_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+        markTurnPending();
+        markTurnThinking();
+
+        // 清理旧会话
+        const oldLocalStdinId = getActiveTabState().sessionMeta.stdinId;
+        if (oldLocalStdinId) {
+          cleanupStdinRoute(oldLocalStdinId);
+          flushStreamBuffer(oldLocalStdinId);
+        }
+
+        try {
+          await spawnLocalSession({
+            tabId,
+            stdinId: preLocalId,
+            model: localModel,
+            messages: [{ role: 'user', content: text }],
+            system: 'You are a helpful AI coding assistant. Reply in Chinese (简体中文).',
+            onStream: handleStreamMessage,
+          });
+
+          setSessionMeta(tabId, {
+            sessionId: preLocalId,
+            stdinId: preLocalId,
+            spawnedModel: localModel,
+            envFingerprint: 'local',
+            spawnConfigHash: spawnConfigHash(),
+            stdinReady: false,
+            turnStartTime: Date.now(),
+            lastProgressAt: Date.now(),
+          });
+
+
+          useSessionStore.getState().fetchSessions();
+        } catch (localErr: any) {
+          setSessionStatus(tabId, 'error');
+          addMessage(tabId, {
+            id: generateMessageId(),
+            role: 'system',
+            type: 'text',
+            content: `本地模型错误: ${String(localErr)}\n\n请确认 Ollama 正在运行且已安装模型。`,
+            timestamp: Date.now(),
+          });
+          useChatStore.getState().setInputDraft(tabId, rawInput);
+          if (savedFiles.length > 0) setFiles(savedFiles);
+        }
+        return;
+      }
+
+      // NOVA: 无后端可用 — 既没 Ollama 也没 API Key
+// 检查是否已预置 Agnes provider（全新安装会自动创建）
+      const _isAgnesPreset = _activeProvider?.preset === 'agnes';
+      if (!_hasApiKey && !_ollamaReady) {
+        setSessionStatus(tabId, 'error');
+        if (_isAgnesPreset) {
+          // Agnes 已预配置，只需免费 Key
+          addMessage(tabId, {
+            id: generateMessageId(),
+            role: 'system',
+            type: 'text',
+            commandType: 'agnes_key_guide',
+            content: `🎉 **Agnes AI 已就绪！**
+
+	Agnes AI 提供**永久免费、不限量**的 AI 模型，已为你预配置好了。
+
+	最后一步：去 [platform.agnes-ai.com](https://platform.agnes-ai.com) 注册拿一个**免费 API Key**（不需要绑卡），回来填上就能用。
+
+	👉 在右下角设置里找到 Agnes AI，粘贴 Key 即可开始对话。`,
+            timestamp: Date.now(),
+          });
+        } else {
+          addMessage(tabId, {
+            id: generateMessageId(),
+            role: 'system',
+            type: 'text',
+            commandType: 'ollama_guide',
+            content: `⚠️ 还没有配对上 AI 引擎
+
+	NOVA 需要一个 AI 后端才能工作：
+
+	1️⃣ **Agnes AI**（推荐，免费在线）
+	   去 [platform.agnes-ai.com](https://platform.agnes-ai.com) 注册拿免费 API Key
+	   然后在设置里添加新 provider
+
+	2️⃣ **安装 Ollama 本地模型**（完全离线，免费）
+	   前往 [ollama.com](https://ollama.com) 下载安装，然后拉取模型：
+	   \`\`\`
+	   ollama pull qwen2.5:7b
+	   \`\`\`
+	   装好后重启 NOVA 就能自动检测到。
+
+	点击右下角设置按钮进入配置。`,
+            timestamp: Date.now(),
+          });
+        }
+        useChatStore.getState().setInputDraft(tabId, rawInput);
+        if (savedFiles.length > 0) setFiles(savedFiles);
+        return;
+      }
+
       markTurnPending();
       lastStderrRef.current = ''; // Clear stale stderr before new turn/startup wait
 
@@ -1193,6 +1206,11 @@ export function InputBar() {
           pid: spawnResult.sessionInfo.pid,
           cli: spawnResult.sessionInfo.cli_path,
         });
+
+        // NOVA: 首次任务完成后标记，触发 DeepSeek 引导
+        if (!localStorage.getItem('nova-first-task-done')) {
+          localStorage.setItem('nova-first-task-done', '1');
+        }
 
         // Write additional meta to the current stdin owner. A draft can be
         // promoted to the real CLI session id before startSession resolves.
@@ -1658,8 +1676,7 @@ export function InputBar() {
           {/* Mode selector — hidden, use /ask /plan /code /bypass slash commands */}
           {/* <ModeSelector disabled={isRunning} /> */}
 
-          {/* Think toggle */}
-          <ThinkLevelSelector disabled={isRunning} />
+
 
           {/* Rewind button */}
           {showRewind && (

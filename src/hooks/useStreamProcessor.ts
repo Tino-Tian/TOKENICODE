@@ -1,6 +1,6 @@
 import { useCallback, useRef, type MutableRefObject } from 'react';
 import { useChatStore, generateMessageId, type ChatMessage } from '../stores/chatStore';
-import { useSettingsStore, mapSessionModeToPermissionMode, getEffectiveMode, getEffectiveThinking } from '../stores/settingsStore';
+import { useSettingsStore, mapSessionModeToPermissionMode, getEffectiveMode } from '../stores/settingsStore';
 import { useSessionStore, setOrphanDrainCallback } from '../stores/sessionStore';
 import { useAgentStore, resolveAgentId, getAgentDepth } from '../stores/agentStore';
 import { useCommandStore } from '../stores/commandStore';
@@ -49,6 +49,85 @@ export function formatErrorForUser(raw: string): string {
   const match = ERROR_CATEGORIES.find((c) => c.pattern.test(raw));
   const friendly = match ? t(match.i18nKey) : t('error.genericFallback');
   return `${friendly}\n\n<details>\n<summary>${t('error.showDetails')}</summary>\n\n\`\`\`\n${raw}\n\`\`\`\n\n</details>`;
+}
+
+/** NOVA: 对话 5 句后触发 DeepSeek 推荐。在流处理完成处直接调用，不依赖 React 渲染时序。 */
+function tryShowDeepseekRecommendation(tabId: string) {
+  try {
+    // 已经推荐过
+    if (localStorage.getItem('nova-deepseek-prompt-shown')) return;
+
+    // 当前 provider 已经是用户自己配的非 Agnes 的 API Key，跳过
+    const activeProvider = useProviderStore.getState().getActive();
+    if (activeProvider?.apiKey && activeProvider.preset !== 'agnes') return;
+
+    // 对话计数 +1
+    const rawCount = localStorage.getItem('nova-conversation-count');
+    const count = (parseInt(rawCount || '0', 10)) + 1;
+    localStorage.setItem('nova-conversation-count', String(count));
+    console.log('[DeepSeek推荐] 对话计数:', count, '/ 5 (provider:', activeProvider?.name, 'preset:', activeProvider?.preset, ')');
+
+    if (count < 5) return;
+
+    // 获取用户实际 token 消耗
+    const tab = useChatStore.getState().getTab(tabId);
+    const meta = tab?.sessionMeta;
+    const totalInput = meta?.totalInputTokens || 0;
+    const totalOutput = meta?.totalOutputTokens || 0;
+    const totalTokens = totalInput + totalOutput;
+
+    // DeepSeek V3 官方价格（人民币）：输入 ¥1/百万token，输出 ¥2/百万token
+    const costInput = totalInput / 1_000_000 * 1;
+    const costOutput = totalOutput / 1_000_000 * 2;
+    const deepseekCost = costInput + costOutput;
+    const roundsPer10Yuan = deepseekCost > 0
+      ? Math.floor(10 / (deepseekCost / count))
+      : 9999;
+
+    // 标记已推荐
+    localStorage.setItem('nova-deepseek-prompt-shown', '1');
+    useProviderStore.getState().markDeepseekPromptShown();
+    console.log('[DeepSeek推荐] ✅ 触发推荐！tokens:', totalTokens, '预估DeepSeek费用: ¥' + deepseekCost.toFixed(4));
+
+    // 格式化金额显示
+    const costDisplay = deepseekCost < 0.01
+      ? '不到 1 分钱'
+      : `¥${deepseekCost.toFixed(2)}`;
+
+    useChatStore.getState().addMessage(tabId, {
+      id: generateMessageId(),
+      role: 'system',
+      type: 'text',
+      commandType: 'deepseek_upgrade',
+      /** 通过 commandData 传递 token 数据给卡片渲染，用于输入框的 placeholder */
+      commandData: { totalInput, totalOutput, totalTokens, deepseekCost, roundsPer10Yuan },
+      content: `🔴 **聊了 ${count} 轮，先看一笔账。**
+
+你刚才跟 Agnes AI 聊的这 ${count} 轮，一共烧了 **${totalInput.toLocaleString()} + ${totalOutput.toLocaleString()} = ${totalTokens.toLocaleString()} 个 token**。
+
+如果你的 AI 是一台发动机，那这些 token 就是汽油。问题是——**你现在烧的是公交公司的油，发动机装的也是公交公司的。**
+
+|  | 🚌 公交引擎（现在） | 🏎️ 私人发动机（DeepSeek） |
+|---|---|---|
+| 油品 | 免费算力池随机分配 | 满血 V3 / R1，代码专家 |
+| 加速 | 高峰排队，听天由命 | 专线即响，绿灯到底 |
+| 仪表盘 | 🔇 黑盒盲开 | 🧠 每一步思考透明可见 |
+| 行车记录 | 请求可能被采样分析 | 对话只在你和它之间 |
+| 油费 | 免费（代价是上面四条） | **${count} 轮 = ${costDisplay}**，10 块够跑 **${roundsPer10Yuan} 轮** |
+
+> 💡 **10 块钱，从「开公交」升级到「开跑车」。** 一笔 token 账，算得清清楚楚。
+>
+> 用 DeepSeek 就像把一台 V8 发动机装进了你的 AI 副驾——便宜到不计成本，强到不用忍耐。
+
+**30 秒换引擎：**
+① 打开 [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) 注册/登录
+② 点「创建 API Key」，复制
+③ 粘贴到下方输入框，点确认`,
+      timestamp: Date.now(),
+    });
+  } catch (e) {
+    console.error('[DeepSeek推荐] 出错:', e);
+  }
 }
 
 /** S18 (v3 §4.3): allowlist of CLI-internal placeholder result strings that
@@ -295,9 +374,9 @@ function shouldCreateStreamingToolPlaceholder(toolName: string | undefined) {
   );
 }
 
-function shouldRenderThinkingForTab(tabId: string) {
-  const tab = useChatStore.getState().getTab(tabId);
-  return getEffectiveThinking(tab?.sessionMeta) !== 'off';
+function shouldRenderThinkingForTab(_tabId: string) {
+  // NOVA: thinkingLevel fixed to 'high' — always render thinking
+  return true;
 }
 
 function clearLivePartialThinking(tabId: string, stdinId?: string) {
@@ -1199,6 +1278,7 @@ export function useStreamProcessor(config: StreamProcessorConfig) {
           } : undefined,
         });
         store.setSessionStatus(tabId, msg.subtype === 'success' ? 'completed' : 'error');
+        if (msg.subtype === 'success') tryShowDeepseekRecommendation(tabId);
         {
           const bgTab = store.getTab(tabId);
           const prevMeta = bgTab?.sessionMeta;
@@ -2649,6 +2729,7 @@ export function useStreamProcessor(config: StreamProcessorConfig) {
         setSessionStatus(
           msg.subtype === 'success' ? 'completed' : 'error'
         );
+        if (msg.subtype === 'success') tryShowDeepseekRecommendation(tabId);
 
         // S11 (v3 §4.2): surface a visible error when the turn failed mid-way
         // (e.g. network drop, 500 from provider). Previously this was gated

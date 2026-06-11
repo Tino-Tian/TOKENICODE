@@ -76,3 +76,4 @@ screenshots/slash-commands.png
 
 # Test run outputs
 .test/runs/
+src-tauri/tools/ollama

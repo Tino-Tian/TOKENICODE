@@ -12,6 +12,7 @@ import { useFileStore } from '../../stores/fileStore';
 import { useAgentStore } from '../../stores/agentStore';
 import { AgentPanel } from '../agents/AgentPanel';
 // bridge import removed — spawn goes through sessionLifecycle module
+import { bridge } from '../../lib/tauri-bridge';
 import { open } from '@tauri-apps/plugin-dialog';
 import { useT } from '../../lib/i18n';
 import { envFingerprint, is1MModel as isOneMillionModel, resolveModelForProvider, spawnConfigHash } from '../../lib/api-provider';
@@ -144,80 +145,6 @@ function formatTokens(n: number): string {
   return String(n);
 }
 
-/** Cycling typewriter text for thinking phase — like Claude Code website "Built for > coders" */
-const THINKING_WORD_COUNT = 17;
-const TYPING_SPEED = 80;      // ms per character (typing)
-const DELETING_SPEED = 40;    // ms per character (deleting)
-const PAUSE_DURATION = 2500;  // ms to hold full word
-const TRANSITION_DELAY = 300; // ms between delete and next word
-
-/** Fisher-Yates shuffle, always starts with index 0 ("思考中"/"Thinking") */
-function shuffledOrder(count: number): number[] {
-  const arr = Array.from({ length: count }, (_, i) => i);
-  for (let i = arr.length - 1; i > 1; i--) {
-    const j = 1 + Math.floor(Math.random() * i); // skip index 0
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-function CyclingThinkingText() {
-  const t = useT();
-  const [order, setOrder] = useState(() => shuffledOrder(THINKING_WORD_COUNT));
-  const [cursor, setCursor] = useState(0);
-  const [displayText, setDisplayText] = useState('');
-  const [phase, setPhase] = useState<'typing' | 'pausing' | 'deleting' | 'waiting'>('typing');
-
-  const wordIndex = order[cursor];
-  const fullWord = t(`chat.thinkingCycle.${wordIndex}`);
-
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-
-    if (phase === 'typing') {
-      if (displayText.length < fullWord.length) {
-        timer = setTimeout(() => {
-          setDisplayText(fullWord.slice(0, displayText.length + 1));
-        }, TYPING_SPEED);
-      } else {
-        timer = setTimeout(() => setPhase('pausing'), 0);
-      }
-    } else if (phase === 'pausing') {
-      timer = setTimeout(() => setPhase('deleting'), PAUSE_DURATION);
-    } else if (phase === 'deleting') {
-      if (displayText.length > 0) {
-        timer = setTimeout(() => {
-          setDisplayText(displayText.slice(0, -1));
-        }, DELETING_SPEED);
-      } else {
-        const nextCursor = cursor + 1;
-        if (nextCursor >= THINKING_WORD_COUNT) {
-          // Reshuffle when all words shown
-          setOrder(shuffledOrder(THINKING_WORD_COUNT));
-          setCursor(0);
-        } else {
-          setCursor(nextCursor);
-        }
-        setPhase('waiting');
-      }
-    } else if (phase === 'waiting') {
-      timer = setTimeout(() => {
-        setDisplayText('');
-        setPhase('typing');
-      }, TRANSITION_DELAY);
-    }
-
-    return () => clearTimeout(timer);
-  }, [displayText, phase, fullWord, cursor]);
-
-  return (
-    <span className="inline-flex items-baseline">
-      <span>{displayText}</span>
-      <span className="text-text-tertiary">...</span>
-    </span>
-  );
-}
-
 function formatApiRetryText(retry: ApiRetryStatus, t: (key: string) => string): string {
   const attempt = retry.attempt
     ? retry.maxRetries
@@ -235,10 +162,12 @@ function formatApiRetryText(retry: ApiRetryStatus, t: (key: string) => string): 
 }
 
 /** Activity indicator with elapsed time and token count */
-function ActivityIndicator({ activityStatus, sessionMeta, sessionStatus }: {
+function ActivityIndicator({ activityStatus, sessionMeta, sessionStatus, thinkingText }: {
   activityStatus: { phase: string; toolName?: string };
   sessionMeta: { turnStartTime?: number; outputTokens?: number; inputTokens?: number; lastProgressAt?: number; apiRetry?: ApiRetryStatus };
   sessionStatus?: string;
+  /** 实时思考内容 — 替代占位循环文字，展示 AI 实际在想什么 */
+  thinkingText?: string;
 }) {
   const t = useT();
   const [now, setNow] = useState(Date.now());
@@ -296,7 +225,22 @@ function ActivityIndicator({ activityStatus, sessionMeta, sessionStatus }: {
           ${isThinking ? '' : 'animate-pulse-soft'}`}>/</span>
       )}
       <span className="text-sm text-text-muted">
-        {isThinking ? <CyclingThinkingText /> : phaseText}
+        {isThinking ? (
+          thinkingText ? (
+            <span className="text-text-tertiary italic">
+              {thinkingText.length > 120
+                ? `…${thinkingText.slice(-120)}`
+                : thinkingText}
+            </span>
+          ) : (
+            <span className="inline-flex items-baseline gap-0.5">
+              {t('chat.thinking')}
+              <span className="inline-block w-1.5 h-3 bg-accent/50 ml-0.5 animate-pulse-soft rounded-sm" />
+            </span>
+          )
+        ) : (
+          phaseText
+        )}
         {statsText && (
           <span className={`ml-1.5 ${stallWarning ? 'text-red-400' : 'text-text-tertiary'}`}>{statsText}</span>
         )}
@@ -641,16 +585,10 @@ export function ChatPanel() {
                 </div>
               );
             })}
-            {/* Streaming thinking — auto-collapse as soon as assistant text becomes visible. */}
-            {isStreaming && partialThinking && (() => {
-              const hasVisiblePartialText = partialText.trim().length > 0;
-              return (
+            {/* 流式思考内容 — 始终可见，展示 AI 实际思考过程 */}
+            {isStreaming && partialThinking && (
               <div className="ml-11 mt-1">
-                <details
-                  key={hasVisiblePartialText ? 'collapsed' : 'open'}
-                  {...(!hasVisiblePartialText ? { open: true } : {})}
-                  className="group"
-                >
+                <details open className="group">
                   <summary className="flex items-center gap-1.5 py-1
                     cursor-pointer text-[11px] text-text-tertiary list-none select-none">
                     <svg width="10" height="10" viewBox="0 0 10 10" fill="none"
@@ -662,15 +600,14 @@ export function ChatPanel() {
                     <span className="inline-block w-1.5 h-3 bg-text-tertiary ml-0.5
                       animate-pulse-soft rounded-sm" />
                   </summary>
-                  <pre ref={thinkingPreRef} className="ml-5 mt-0.5 text-[11px] text-text-tertiary
-                    whitespace-pre-wrap max-h-48 overflow-y-auto
+                  <pre ref={thinkingPreRef} className="ml-5 mt-0.5 text-[12px] text-text-tertiary
+                    whitespace-pre-wrap max-h-64 overflow-y-auto
                     font-mono leading-relaxed">
                     {partialThinking}
                   </pre>
                 </details>
               </div>
-              );
-            })()}
+            )}
             {isStreaming && partialText && (() => {
               // Hide streaming text while an unresolved question is pending —
               // the CLI may keep sending text_delta events for the next turn's
@@ -732,7 +669,7 @@ export function ChatPanel() {
             ))}
             {/* Inline activity status indicator — like Claude Desktop App */}
             {(sessionStatus === 'running' || sessionStatus === 'reconnecting' || sessionStatus === 'stopping' || activityStatus.phase === 'awaiting') && (
-              <ActivityIndicator activityStatus={activityStatus} sessionMeta={sessionMeta} sessionStatus={sessionStatus} />
+              <ActivityIndicator activityStatus={activityStatus} sessionMeta={sessionMeta} sessionStatus={sessionStatus} thinkingText={partialThinking} />
             )}
           </div>
         )}
@@ -913,11 +850,43 @@ function WelcomeScreen() {
   const setupCompleted = useSettingsStore((s) => s.setupCompleted);
   const recentProjects = useFileStore((s) => s.recentProjects);
   const fetchProjects = useFileStore((s) => s.fetchRecentProjects);
+  const [autoConfiguring, setAutoConfiguring] = useState(false);
 
   useEffect(() => { fetchProjects(); }, []);
 
+  // NOVA: 自动配置工作目录（不再让用户手动选文件夹）
+  useEffect(() => {
+    if (!setupCompleted) return;
+    const wd = useSettingsStore.getState().workingDirectory;
+    if (wd) return;
+    setAutoConfiguring(true);
+    bridge.getNovaWorkspace()
+      .then((novaPath) => {
+        startDraftSession(novaPath);
+        console.log('[NOVA] Auto workspace from WelcomeScreen:', novaPath);
+      })
+      .catch((e) => {
+        console.error('[NOVA] Auto workspace failed in WelcomeScreen:', e);
+        setAutoConfiguring(false);
+      });
+  }, [setupCompleted]);
+
   const handlePickFolder = useCallback(async () => {
-    const selected = await open({
+    // NOVA: 先确保默认项目文件夹存在（优先D盘，静默回退C盘）
+    let selected: string | null = null;
+    try {
+      selected = await bridge.createProjectDir();
+      console.log('[NOVA] Project dir created via createProjectDir:', selected);
+    } catch (e) {
+      console.warn('[NOVA] createProjectDir failed, falling back to picker:', e);
+    }
+    // 如果 createProjectDir 返回了路径，直接用它；否则让用户手动选
+    if (selected) {
+      startDraftSession(selected);
+      return;
+    }
+    // 兜底：手动选择文件夹
+    selected = await open({
       directory: true,
       multiple: false,
       title: t('project.selectFolder'),
@@ -927,9 +896,24 @@ function WelcomeScreen() {
     }
   }, [t]);
 
-  // Show SetupWizard if setup has not been completed
+  // 显示 SetupWizard（如未完成）
   if (!setupCompleted) {
     return <SetupWizard />;
+  }
+
+  // 正在自动配置工作目录
+  if (autoConfiguring) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center">
+        <AiAvatar size="w-20 h-20" rounded="rounded-3xl" className="mb-6 shadow-glow" />
+        <h2 className="text-xl font-semibold text-accent mb-2">
+          {t('chat.welcome')}
+        </h2>
+        <p className="text-sm text-text-muted max-w-sm leading-relaxed">
+          正在准备您的工作空间…
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -943,7 +927,7 @@ function WelcomeScreen() {
         {t('welcome.subtitle')}
       </p>
 
-      {/* Primary action: new chat with folder picker */}
+      {/* 备用：手动选文件夹（自动配置失败时） */}
       <button
         onClick={handlePickFolder}
         className="px-6 py-3 rounded-[20px] text-sm font-medium

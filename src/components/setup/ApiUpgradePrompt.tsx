@@ -1,23 +1,9 @@
-// useSettingsStore removed — unused in this component
-
 interface Props {
   onClose: () => void;
   onUpgrade: () => void;
 }
 
-/** Token usage from the setup task (estimated, updated at runtime) */
-function estimateTokens(): { zhipuTokens: number; deepseekTokens: number; deepseekCost: string } {
-  // These are placeholder values — in production, read from actual chat session
-  return {
-    zhipuTokens: 1500,
-    deepseekTokens: 1200,
-    deepseekCost: '0.002',
-  };
-}
-
 export function ApiUpgradePrompt({ onClose, onUpgrade }: Props) {
-  const { zhipuTokens, deepseekTokens, deepseekCost } = estimateTokens();
-
   return (
     <div style={{
       position: 'fixed',
@@ -45,21 +31,21 @@ export function ApiUpgradePrompt({ onClose, onUpgrade }: Props) {
           letterSpacing: '2px',
           fontWeight: 700
         }}>
-          是否更换 DeepSeek API Key？
+          升级到 DeepSeek，解锁完整能力
         </h2>
 
-        {/* 煤灰 vs 如来 */}
+        {/* 本地 vs DeepSeek 对比 */}
         <div style={{ marginBottom: '16px', lineHeight: '1.8' }}>
-          <p style={{ color: '#5a7288', fontSize: '12px', margin: '0 0 8px' }}>
-            DeepSeek V3 约等于 <span style={{ color: '#ffd700' }}>如来佛祖</span>。
+          <p style={{ color: '#ffd700', fontSize: '12px', margin: '0 0 8px' }}>
+            DeepSeek V3 ≈ 如来佛祖级别的代码能力
           </p>
-          <p style={{ color: '#3a4a5a', fontSize: '12px', margin: '0 0 8px' }}>
-            您现在用的智谱 GLM 免费版约等于
-            <span style={{ color: '#4a4a4a' }}> 太上老君炼丹炉里的煤灰</span>。
+          <p style={{ color: '#5a7288', fontSize: '12px', margin: 0 }}>
+            您当前使用的是本地 Ollama 小模型，能基础对话，但
+            <span style={{ color: '#00a8e8' }}> 不能读文件、不能改代码、不能用工具</span>。
           </p>
         </div>
 
-        {/* 量化对比 */}
+        {/* 功能对比 */}
         <div style={{
           background: '#0d1520',
           border: '1px solid #141c28',
@@ -67,25 +53,48 @@ export function ApiUpgradePrompt({ onClose, onUpgrade }: Props) {
           marginBottom: '16px',
           fontSize: '10px'
         }}>
-          <p style={{ color: '#3a4a5a', margin: '0 0 6px' }}>
-            以本次引导任务为例：
+          <p style={{ color: '#3a4a5a', margin: '0 0 8px' }}>
+            搭配 DeepSeek API Key 之后：
           </p>
           <p style={{ color: '#5a7288', margin: '0 0 4px' }}>
-            智谱 GLM：约 {zhipuTokens.toLocaleString()} Tokens（免费，不花钱）
+            ✅ 读文件 &nbsp; ✅ 写代码 &nbsp; ✅ 搜索项目
           </p>
-          <p style={{ color: '#00a8e8', margin: 0 }}>
-            换成 DeepSeek：约 {deepseekTokens.toLocaleString()} Tokens（约 ¥{deepseekCost}）
+          <p style={{ color: '#5a7288', margin: '0 0 4px' }}>
+            ✅ 终端命令 &nbsp; ✅ Git 操作 &nbsp; ✅ 图片理解
+          </p>
+          <p style={{ color: '#00a8e8', margin: '8px 0 0' }}>
+            💰 费用极低：每次对话大约只需几分钱
           </p>
         </div>
 
-        {/* 退路 */}
+        {/* 获取方式 */}
+        <div style={{
+          background: '#0d1520',
+          border: '1px solid #141c28',
+          padding: '12px',
+          marginBottom: '16px',
+          fontSize: '10px'
+        }}>
+          <p style={{ color: '#3a4a5a', margin: '0 0 4px' }}>
+            📝 获取 Key：<span style={{ color: '#5a7288' }}>打开 DeepSeek 官网 → 注册 → API Keys</span>
+          </p>
+          <p style={{ color: '#3a4a5a', margin: '0 0 4px' }}>
+            🔗 地址：<span style={{ color: '#00a8e8' }}>platform.deepseek.com</span>
+          </p>
+          <p style={{ color: '#3a4a5a', margin: 0 }}>
+            ⚡ 新用户注册即送额度，够用很久
+          </p>
+        </div>
+
+        {/* 退路说明 */}
         <p style={{
           color: '#3a4a5a',
           fontSize: '10px',
           marginBottom: '20px',
           lineHeight: '1.6'
         }}>
-          ——当然，您也可以选择不换。
+          如果暂时不想配，可以继续用本地模型基础对话。
+          <br/>随时可以在设置里补填 Key。
         </p>
 
         {/* 按钮 */}
@@ -106,7 +115,7 @@ export function ApiUpgradePrompt({ onClose, onUpgrade }: Props) {
               cursor: 'pointer'
             }}
           >
-            不换，继续用免费版
+            继续用本地模型
           </button>
           <button
             onClick={onUpgrade}
@@ -122,7 +131,7 @@ export function ApiUpgradePrompt({ onClose, onUpgrade }: Props) {
               cursor: 'pointer'
             }}
           >
-            更换 DeepSeek Key
+            配置 DeepSeek Key
           </button>
         </div>
       </div>

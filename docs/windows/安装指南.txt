@@ -1,0 +1,32 @@
+NOVA Windows 安装指南
+========================
+
+📋 安装前请确认：
+- 操作系统：Windows 10 1809 及以上版本，或 Windows 11
+- 至少有 500MB 剩余磁盘空间
+- 如果系统提示缺少 WebView2，请先运行 U 盘中的 install-webview2-offline.cmd
+
+📦 安装步骤：
+1. 双击 NOVA_Setup_1.0.0-beta_x64.exe
+2. 如果 Windows 弹出"Windows 保护了你的电脑"（SmartScreen 警告）：
+   → 点击"更多信息"
+   → 点击"仍要运行"
+   （这是因为我们的安装包未购买昂贵的数字签名证书，详见"签名说明.txt"）
+3. 选择安装路径（推荐用默认路径）
+4. 勾选"创建桌面快捷方式"（推荐）
+5. 点击"安装"
+6. 安装完成后，从桌面快捷方式或开始菜单启动 NOVA
+
+🚨 常见问题：
+- 安装后打不开：请运行 U 盘中的 diagnostics.ps1（右键 → 用 PowerShell 运行）
+- 提示"缺少 WebView2"：运行 U 盘中的 install-webview2-offline.cmd
+- 杀毒软件报毒：这是误报，请将 NOVA 安装目录加入白名单
+
+📁 安装位置：
+默认安装在：C:\Users\你的用户名\AppData\Local\Programs\NOVA\
+
+🗑 卸载方法：
+开始菜单 → 找到 NOVA 文件夹 → 点击"卸载 NOVA"
+或通过 Windows 设置 → 应用 → 找到 NOVA → 卸载
+
+⚠️ 注意：这是 Beta 测试版，未经真机充分测试。如遇到问题请反馈。

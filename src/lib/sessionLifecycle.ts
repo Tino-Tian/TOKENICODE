@@ -13,8 +13,12 @@ import {
   onClaudeStream,
   onClaudeStderr,
   onSessionExit,
+  onLocalStream,
+  onLocalExit,
+  startLocalChat,
   type StartSessionParams,
   type SessionInfo,
+  type LocalChatParams,
 } from './tauri-bridge';
 import { useChatStore, generateInterruptedId } from '../stores/chatStore';
 import type { SessionStatus } from '../stores/chatStore';
@@ -317,6 +321,92 @@ export async function spawnSession(params: SpawnParams): Promise<SpawnResult> {
     // Clean from global map if it was set
     if ((window as any).__claudeUnlisteners?.[stdinId]) {
       delete (window as any).__claudeUnlisteners[stdinId];
+    }
+    throw err;
+  }
+}
+
+// ================================================================
+// NOVA: spawnLocalSession — 启动本地 Ollama 聊天会话
+// ================================================================
+
+export interface LocalSpawnParams {
+  tabId: string;
+  stdinId: string;
+  model: string;
+  messages: Array<{ role: string; content: string }>;
+  system?: string;
+  onStream: (msg: any) => void;
+}
+
+export async function spawnLocalSession(params: LocalSpawnParams): Promise<{ stdinId: string }> {
+  const { tabId, stdinId, model, messages, system, onStream } = params;
+  const rollbacks: (() => void)[] = [];
+
+  try {
+    // STEP 1: 注册 stdinTab 映射
+    useSessionStore.getState().registerStdinTab(stdinId, tabId);
+    rollbacks.push(() => useSessionStore.getState().unregisterStdinTab(stdinId));
+
+    // STEP 2: 写入 sessionMeta
+    const previousStdinId = useChatStore.getState().getTab(tabId)?.sessionMeta.stdinId;
+    useChatStore.getState().setSessionMeta(tabId, { stdinId });
+    rollbacks.push(() => useChatStore.getState().setSessionMeta(tabId, { stdinId: previousStdinId }));
+
+    // STEP 3: 注册 stream 监听
+    const unlistenStream = await onLocalStream(stdinId, (msg: any) => {
+      msg.__stdinId = stdinId;
+      onStream(msg);
+    });
+    rollbacks.push(unlistenStream);
+
+    // STEP 4: 注册 exit 监听
+    const unlistenExit = await onLocalExit(stdinId, () => {
+      const ownership = checkOwnership(stdinId);
+      if (!ownership.valid) {
+        cleanupStdinRoute(stdinId);
+        return;
+      }
+      const exitTab = useChatStore.getState().getTab(ownership.tabId);
+      if (exitTab?.sessionMeta.stdinId === stdinId) {
+        handleProcessExitFinalize(stdinId);
+      }
+    });
+    rollbacks.push(unlistenExit);
+
+    // 存储 unlisten 到全局 map（复用 __claudeUnlisteners）
+    if (!(window as any).__claudeUnlisteners) {
+      (window as any).__claudeUnlisteners = {};
+    }
+    let didUnlisten = false;
+    const combinedUnlisten = () => {
+      if (didUnlisten) return;
+      didUnlisten = true;
+      for (const rollback of rollbacks.reverse()) {
+        try { rollback(); } catch { /* ignore */ }
+      }
+    };
+    (window as any).__claudeUnlisteners[stdinId] = combinedUnlisten;
+
+    // STEP 5: 启动本地聊天（异步，不阻塞返回）
+    const chatParams: LocalChatParams = {
+      stdin_id: stdinId,
+      model,
+      messages,
+      system,
+    };
+    // 后台启动，不 await（让流事件驱动 UI）
+    startLocalChat(chatParams).catch((err) => {
+      console.error('[NOVA] local chat error:', err);
+      // 发射错误事件让前端感知
+      handleProcessExitFinalize(stdinId);
+    });
+
+    return { stdinId };
+  } catch (err) {
+    // 失败时回滚
+    for (const rollback of rollbacks.reverse()) {
+      try { rollback(); } catch { /* ignore */ }
     }
     throw err;
   }
