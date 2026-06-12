@@ -1,6 +1,6 @@
 {
   "productName": "NOVA Beta",
-  "version": "1.0.0-beta",
+  "version": "2.2.0-beta",
   "plugins": {
     "updater": {
       "endpoints": [
