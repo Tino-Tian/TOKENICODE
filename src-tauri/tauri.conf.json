@@ -35,7 +35,7 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "createUpdaterArtifacts": true,
+    "createUpdaterArtifacts": false,
     "resources": {
       "tools/cleanup-helper": "tools/cleanup-helper",
       "resources/en.lproj": "en.lproj",
