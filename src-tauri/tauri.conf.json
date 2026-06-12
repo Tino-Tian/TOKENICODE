@@ -55,8 +55,7 @@
         "installerIcon": "icons/icon.ico",
         "displayLanguageSelector": true,
         "languages": ["English", "SimpChinese"],
-        "startMenuFolder": "NOVA",
-        "installerHooks": "nsis/installer_hooks.nsh"
+        "startMenuFolder": "NOVA"
       }
     }
   },
