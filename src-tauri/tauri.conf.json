@@ -37,7 +37,6 @@
     ],
     "createUpdaterArtifacts": true,
     "resources": {
-      "tools/ollama": "ollama",
       "tools/cleanup-helper": "tools/cleanup-helper",
       "resources/en.lproj": "en.lproj",
       "resources/zh-Hans.lproj": "zh-Hans.lproj"
