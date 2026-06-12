@@ -4,6 +4,17 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      edition:
+        description: 'Edition (alpha/beta/stable)'
+        required: true
+        default: 'beta'
+        type: choice
+        options:
+          - alpha
+          - beta
+          - stable
 
 jobs:
   release:
@@ -33,16 +44,50 @@ jobs:
         shell: bash
         run: |
           TAG="${GITHUB_REF_NAME}"
-          if [[ "$TAG" == *"-alpha"* ]]; then
+
+          # workflow_dispatch 手动触发时，优先使用输入参数
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            MODE="${{ inputs.edition }}"
+            BUILD_DATE="$(date +%Y%m%d-%H%M)"
+            case "$MODE" in
+              alpha)
+                echo "edition=alpha" >> $GITHUB_OUTPUT
+                echo "prerelease=true" >> $GITHUB_OUTPUT
+                echo "release_name=TCAlpha ci-$BUILD_DATE" >> $GITHUB_OUTPUT
+                echo "extra_args=--config editions/alpha/tauri.alpha.conf.json" >> $GITHUB_OUTPUT
+                ;;
+              beta)
+                echo "edition=beta" >> $GITHUB_OUTPUT
+                echo "prerelease=true" >> $GITHUB_OUTPUT
+                echo "release_name=NOVA Beta ci-$BUILD_DATE" >> $GITHUB_OUTPUT
+                echo "extra_args=--config editions/beta/tauri.beta.conf.json" >> $GITHUB_OUTPUT
+                ;;
+              stable)
+                echo "edition=stable" >> $GITHUB_OUTPUT
+                echo "prerelease=false" >> $GITHUB_OUTPUT
+                echo "release_name=NOVA ci-$BUILD_DATE" >> $GITHUB_OUTPUT
+                echo "extra_args=" >> $GITHUB_OUTPUT
+                ;;
+            esac
+            echo "tag_name=ci-${MODE}-${BUILD_DATE}" >> $GITHUB_OUTPUT
+          elif [[ "$TAG" == *"-alpha"* ]]; then
             echo "edition=alpha" >> $GITHUB_OUTPUT
             echo "prerelease=true" >> $GITHUB_OUTPUT
             echo "release_name=TCAlpha $TAG" >> $GITHUB_OUTPUT
             echo "extra_args=--config editions/alpha/tauri.alpha.conf.json" >> $GITHUB_OUTPUT
+            echo "tag_name=$TAG" >> $GITHUB_OUTPUT
+          elif [[ "$TAG" == *"-beta"* ]]; then
+            echo "edition=beta" >> $GITHUB_OUTPUT
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+            echo "release_name=NOVA Beta $TAG" >> $GITHUB_OUTPUT
+            echo "extra_args=--config editions/beta/tauri.beta.conf.json" >> $GITHUB_OUTPUT
+            echo "tag_name=$TAG" >> $GITHUB_OUTPUT
           else
             echo "edition=stable" >> $GITHUB_OUTPUT
             echo "prerelease=false" >> $GITHUB_OUTPUT
-            echo "release_name=TOKENICODE $TAG" >> $GITHUB_OUTPUT
+            echo "release_name=NOVA $TAG" >> $GITHUB_OUTPUT
             echo "extra_args=" >> $GITHUB_OUTPUT
+            echo "tag_name=$TAG" >> $GITHUB_OUTPUT
           fi
 
       - name: Install dependencies (Ubuntu only)
@@ -88,7 +133,7 @@ jobs:
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
-          tagName: ${{ github.ref_name }}
+          tagName: ${{ steps.edition.outputs.tag_name }}
           releaseName: ${{ steps.edition.outputs.release_name }}
           releaseBody: 'See the assets to download and install this version.'
           releaseDraft: true
