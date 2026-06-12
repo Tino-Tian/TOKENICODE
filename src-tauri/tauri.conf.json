@@ -47,7 +47,7 @@
     },
     "windows": {
       "webviewInstallMode": {
-        "type": "downloadBootstrapper",
+        "type": "offlineInstaller",
         "silent": true
       },
       "nsis": {
@@ -55,7 +55,8 @@
         "installerIcon": "icons/icon.ico",
         "displayLanguageSelector": true,
         "languages": ["English", "SimpChinese"],
-        "startMenuFolder": "NOVA"
+        "startMenuFolder": "NOVA",
+        "installerHooks": "nsis/installer_hooks.nsh"
       }
     }
   },
