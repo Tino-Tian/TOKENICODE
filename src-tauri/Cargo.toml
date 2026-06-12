@@ -1,6 +1,6 @@
 [package]
 name = "tokenicode"
-version = "1.0.0"
+version = "2.2.0"
 description = "NOVA - Claude Code Desktop GUI"
 authors = ["NOVA"]
 license = "Apache-2.0"

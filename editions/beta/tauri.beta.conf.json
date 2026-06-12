@@ -1,4 +1,12 @@
 {
   "productName": "NOVA Beta",
-  "version": "2.2.0"
+  "version": "2.2.1",
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://raw.githubusercontent.com/yiliqi78/TOKENICODE/beta/latest-beta.json",
+        "https://gitee.com/yiliqiseven/TOKENICODE/raw/beta/latest-beta-gitee.json"
+      ]
+    }
+  }
 }
