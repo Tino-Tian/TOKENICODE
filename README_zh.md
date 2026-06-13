@@ -1,20 +1,20 @@
 <div align="center">
 
-<img src="public/app-icon.png" alt="TOKENICODE Logo" width="120" />
+<img src="public/app-icon.png" alt="NOVA Logo" width="120" />
 
-# TOKENICODE
+# NOVA
 
 ### Claude Code 精美桌面客户端
 
-[![Version](https://img.shields.io/github/v/release/yiliqi78/TOKENICODE?style=flat-square&color=blue)](https://github.com/yiliqi78/TOKENICODE/releases)
+[![Version](https://img.shields.io/github/v/release/Tino-Tian/TOKENICODE?style=flat-square&color=blue)](https://github.com/Tino-Tian/TOKENICODE/releases)
 [![License](https://img.shields.io/badge/许可证-Apache%202.0-green?style=flat-square)](LICENSE)
 [![Platform](https://img.shields.io/badge/平台-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey?style=flat-square)](#安装)
 [![Tauri](https://img.shields.io/badge/Tauri-2.0-FFC131?style=flat-square&logo=tauri&logoColor=white)](https://tauri.app)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
 
-**TOKENICODE** 为 [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) 打造精美的桌面图形界面 — 自由接入第三方 API，原生支持国内服务商，提供文件管理、会话管理和结构化权限控制的完整体验。
+**NOVA** 为 [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) 打造精美的桌面图形界面 — 自由接入第三方 API，原生支持国内服务商，提供文件管理、会话管理和结构化权限控制的完整体验。
 
-[**下载**](https://github.com/yiliqi78/TOKENICODE/releases) · [**功能**](#功能) · [**截图**](#截图)
+[**下载**](https://github.com/Tino-Tian/TOKENICODE/releases) · [**功能**](#功能) · [**截图**](#截图)
 
 ---
 
@@ -22,7 +22,7 @@
 
 </div>
 
-## 为什么选择 TOKENICODE？
+## 为什么选择 NOVA？
 
 | | | | |
 |:---:|:---:|:---:|:---:|
@@ -39,27 +39,27 @@
 
 ### 前置条件
 
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) — TOKENICODE 会在首次启动时自动检测、安装和认证
+- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) — NOVA 会在首次启动时自动检测、安装和认证
 
 ### macOS
 
-从 [Releases](https://github.com/yiliqi78/TOKENICODE/releases) 下载最新 `.dmg`，打开后将 **TOKENICODE** 拖入应用程序文件夹。
+从 [Releases](https://github.com/Tino-Tian/TOKENICODE/releases) 下载最新 `.dmg`，打开后将 **NOVA** 拖入应用程序文件夹。
 
 同时提供 Apple Silicon (arm64) 和 Intel (x86_64) 版本。应用已完成代码签名和公证，无需额外操作。
 
 ### Windows
 
-从 [Releases](https://github.com/yiliqi78/TOKENICODE/releases) 下载 `.msi` 或 `.exe` 安装包并运行。要求 Windows 10 或更高版本。
+从 [Releases](https://github.com/Tino-Tian/TOKENICODE/releases) 下载 `.msi` 或 `.exe` 安装包并运行。要求 Windows 10 或更高版本。
 
 ### Linux
 
-从 [Releases](https://github.com/yiliqi78/TOKENICODE/releases) 下载 `.AppImage`、`.deb` 或 `.rpm` 安装包。需要 WebKit2GTK。
+从 [Releases](https://github.com/Tino-Tian/TOKENICODE/releases) 下载 `.AppImage`、`.deb` 或 `.rpm` 安装包。需要 WebKit2GTK。
 
-> **国内用户：** 如果 GitHub 下载缓慢，可以从 [Gitee 镜像](https://gitee.com/yiliqiseven/TOKENICODE/releases) 获取安装包。应用在检测更新时也会在 GitHub 不可达时自动降级到 Gitee。
+> **国内用户：** 如果 GitHub 下载缓慢，可以从 [Gitee 镜像](https://gitee.com/Tino-Tian/TOKENICODE/releases) 获取安装包。应用在检测更新时也会在 GitHub 不可达时自动降级到 Gitee。
 
 ## 快速开始
 
-1. **打开 TOKENICODE** — 如果未安装 Claude Code CLI，安装向导会引导你完成安装和登录，无需打开终端
+1. **打开 NOVA** — 如果未安装 Claude Code CLI，安装向导会引导你完成安装和登录，无需打开终端
 2. **选择项目文件夹** — 在欢迎界面或输入栏选择
 3. **开始对话** — Claude CLI 会话在后台无缝运行
 4. **配置 API**（可选）— 打开 设置 → API Provider 添加第三方密钥或导入配置
@@ -78,7 +78,7 @@
 
 ### 国内可用
 
-TOKENICODE 专门为国内网络环境做了适配：
+NOVA 专门为国内网络环境做了适配：
 
 - **Gitee 更新镜像** — GitHub 不可达时自动降级到 Gitee 检查更新
 - **国内 API 预设** — DeepSeek、智谱 GLM、通义千问 Coder、Kimi k2、MiniMax 已预配置正确的 API 地址
@@ -87,7 +87,7 @@ TOKENICODE 专门为国内网络环境做了适配：
 
 ### SDK 控制协议
 
-TOKENICODE v0.8.0 采用 Claude CLI 原生控制协议处理权限：
+NOVA v0.8.0 采用 Claude CLI 原生控制协议处理权限：
 
 - 权限请求以结构化 JSON 通过 stdout 传递
 - 响应为类型化的 `allow` / `deny` 消息，通过 stdin 回传
@@ -239,6 +239,6 @@ TOKENICODE v0.8.0 采用 Claude CLI 原生控制协议处理权限：
 
 <div align="center">
 
-**如果你觉得 TOKENICODE 有用，请给个 ⭐ 支持一下！**
+**如果你觉得 NOVA 有用，请给个 ⭐ 支持一下！**
 
 </div>

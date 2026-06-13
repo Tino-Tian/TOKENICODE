@@ -64,8 +64,8 @@
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEZBRENERjc5RTkyQTUzNTEKUldSUlV5cnBlZC9jK2hJR2t0L1RSb0gwS0V0QlQ4NkFsU1ZUeTIrc3d3Zk9oUWtVdlpIR2d5RmkK",
       "endpoints": [
         "https://herear.cn:8443/releases/tokenicode/latest.json",
-        "https://github.com/yiliqi78/TOKENICODE/releases/latest/download/latest.json",
-        "https://gitee.com/yiliqiseven/TOKENICODE/raw/main/latest-gitee.json"
+        "https://github.com/Tino-Tian/TOKENICODE/releases/latest/download/latest.json",
+        "https://gitee.com/Tino-Tian/TOKENICODE/raw/main/latest-gitee.json"
       ]
     }
   }

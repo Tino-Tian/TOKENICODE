@@ -1,20 +1,20 @@
 <div align="center">
 
-<img src="public/app-icon.png" alt="TOKENICODE Logo" width="120" />
+<img src="public/app-icon.png" alt="NOVA Logo" width="120" />
 
-# TOKENICODE
+# NOVA
 
 ### A Beautiful Desktop Client for Claude Code
 
-[![Version](https://img.shields.io/github/v/release/yiliqi78/TOKENICODE?style=flat-square&color=blue)](https://github.com/yiliqi78/TOKENICODE/releases)
+[![Version](https://img.shields.io/github/v/release/Tino-Tian/TOKENICODE?style=flat-square&color=blue)](https://github.com/Tino-Tian/TOKENICODE/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green?style=flat-square)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey?style=flat-square)](#installation)
 [![Tauri](https://img.shields.io/badge/Tauri-2.0-FFC131?style=flat-square&logo=tauri&logoColor=white)](https://tauri.app)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
 
-**TOKENICODE** wraps the powerful [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) in a polished desktop interface — bring your own API key, connect any provider, and get a native coding experience with file exploration, session management, and structured permission control.
+**NOVA** wraps the powerful [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) in a polished desktop interface — bring your own API key, connect any provider, and get a native coding experience with file exploration, session management, and structured permission control.
 
-[**Download**](https://github.com/yiliqi78/TOKENICODE/releases) · [**Features**](#features) · [**Screenshots**](#screenshots)
+[**Download**](https://github.com/Tino-Tian/TOKENICODE/releases) · [**Features**](#features) · [**Screenshots**](#screenshots)
 
 ---
 
@@ -22,7 +22,7 @@
 
 </div>
 
-## Why TOKENICODE?
+## Why NOVA?
 
 | | | | |
 |:---:|:---:|:---:|:---:|
@@ -39,27 +39,27 @@
 
 ### Prerequisites
 
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) — TOKENICODE can auto-detect, install, and authenticate it for you on first launch
+- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) — NOVA can auto-detect, install, and authenticate it for you on first launch
 
 ### macOS
 
-Download the latest `.dmg` from [Releases](https://github.com/yiliqi78/TOKENICODE/releases), open it, and drag **TOKENICODE** to your Applications folder.
+Download the latest `.dmg` from [Releases](https://github.com/Tino-Tian/TOKENICODE/releases), open it, and drag **NOVA** to your Applications folder.
 
 Available for both Apple Silicon (arm64) and Intel (x86_64). The app is code-signed and notarized — no extra steps needed.
 
 ### Windows
 
-Download the latest `.msi` or `.exe` installer from [Releases](https://github.com/yiliqi78/TOKENICODE/releases) and run it. Requires Windows 10 or later.
+Download the latest `.msi` or `.exe` installer from [Releases](https://github.com/Tino-Tian/TOKENICODE/releases) and run it. Requires Windows 10 or later.
 
 ### Linux
 
-Download the `.AppImage`, `.deb`, or `.rpm` package from [Releases](https://github.com/yiliqi78/TOKENICODE/releases). Requires WebKit2GTK.
+Download the `.AppImage`, `.deb`, or `.rpm` package from [Releases](https://github.com/Tino-Tian/TOKENICODE/releases). Requires WebKit2GTK.
 
-> **China users:** If GitHub downloads are slow, grab releases from the [Gitee mirror](https://gitee.com/yiliqiseven/TOKENICODE/releases). The app also checks Gitee for updates when GitHub is unreachable.
+> **China users:** If GitHub downloads are slow, grab releases from the [Gitee mirror](https://gitee.com/Tino-Tian/TOKENICODE/releases). The app also checks Gitee for updates when GitHub is unreachable.
 
 ## Getting Started
 
-1. **Open TOKENICODE** — if the Claude Code CLI is not installed, the setup wizard guides you through installation and login, no terminal required
+1. **Open NOVA** — if the Claude Code CLI is not installed, the setup wizard guides you through installation and login, no terminal required
 2. **Select a project folder** from the welcome screen or input bar
 3. **Start chatting** — the Claude CLI session runs seamlessly in the background
 4. **Configure your API** (optional) — open Settings → API Provider to add third-party keys or import a config
@@ -78,7 +78,7 @@ Use Claude through any compatible API endpoint — not just Anthropic's official
 
 ### China-Ready
 
-TOKENICODE is designed to work well behind the Great Firewall:
+NOVA is designed to work well behind the Great Firewall:
 
 - **Gitee update mirror** — when GitHub is unreachable, auto-update falls back to Gitee
 - **Chinese API presets** — DeepSeek, Zhipu GLM, Qwen Coder, Kimi k2, MiniMax are pre-configured with correct endpoints
@@ -87,7 +87,7 @@ TOKENICODE is designed to work well behind the Great Firewall:
 
 ### SDK Control Protocol
 
-TOKENICODE v0.8.0 uses Claude CLI's native control protocol for permission handling:
+NOVA v0.8.0 uses Claude CLI's native control protocol for permission handling:
 
 - Permission requests flow as structured JSON through stdout
 - Responses are typed `allow` / `deny` messages via stdin
@@ -239,6 +239,6 @@ This project is licensed under the **Apache License 2.0** — see the [LICENSE](
 
 <div align="center">
 
-**If you find TOKENICODE useful, please consider giving it a ⭐!**
+**If you find NOVA useful, please consider giving it a ⭐!**
 
 </div>
